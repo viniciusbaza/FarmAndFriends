@@ -3,7 +3,8 @@ import { UserContext } from './UserContext'
 import type { SaveProfileInput, User } from './UserContext'
 import { getCurrentUser, updateProfile, type UpdateProfileResponse } from '../api/users'
 import { useAuth } from '../auth/useAuth'
-import { applyXpGain } from './applyXpGain'
+import { AuthoritativeReadGate } from './authoritativeRead'
+import { getSessionScope } from '../api/sessionScope'
 import { advanceAsyncSession, isAsyncSessionCurrent, type AsyncSession } from '../social/asyncSession'
 import { applySavedProfile, mergeUserRefresh, type UserRevisions } from './userUpdates'
 
@@ -11,6 +12,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { token } = useAuth()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [economyPending, setEconomyPending] = useState(false)
+  const readGate = useRef(new AuthoritativeReadGate())
   const activeSession = useRef<AsyncSession>({ token, generation: 0 })
   activeSession.current = advanceAsyncSession(activeSession.current, token)
   const [dataSession, setDataSession] = useState(activeSession.current)
@@ -25,9 +28,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const loadUser = useCallback(async (showInitialLoading: boolean) => {
     const session = activeSession.current
     const requestId = ++latestLoad.current
+    const ticket = readGate.current.begin(getSessionScope())
     const capturedRevisions = { ...revisions.current }
     const isCurrent = () => mounted.current &&
-      isAsyncSessionCurrent(activeSession.current, session) && requestId === latestLoad.current
+      isAsyncSessionCurrent(activeSession.current, session) && requestId === latestLoad.current &&
+      readGate.current.accepts(ticket, getSessionScope())
     if (!token) {
       setUser(null)
       setLoading(false)
@@ -43,12 +48,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (!isCurrent()) return
       setUser(current => mergeUserRefresh(current, data, capturedRevisions, revisions.current))
       setDataSession(session)
+      setEconomyPending(false)
     } catch (err) {
       if (!isCurrent()) return
+      setEconomyPending(true)
       if (showInitialLoading) {
         setUser(null)
       }
-      throw err
+      if (showInitialLoading) throw err
     } finally {
       if (isCurrent()) {
         setLoading(false)
@@ -60,14 +67,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return loadUser(false)
   }, [loadUser])
 
-  const addXp = useCallback((xpGained: number) => {
-    if (!Number.isInteger(xpGained) || xpGained <= 0) return
-    revisions.current.xp += 1
-
-    setUser(currentUser =>
-      currentUser ? applyXpGain(currentUser, xpGained) : currentUser,
-    )
-  }, [])
+  useEffect(() => {
+    const confirmed = () => {
+      readGate.current.invalidate()
+      setEconomyPending(true)
+      void loadUser(false)
+    }
+    const refresh = () => { void loadUser(false) }
+    window.addEventListener('economy:confirmed', confirmed)
+    window.addEventListener('focus', refresh)
+    const timer = window.setInterval(refresh, economyPending ? 5_000 : 30_000)
+    return () => {
+      window.removeEventListener('economy:confirmed', confirmed)
+      window.removeEventListener('focus', refresh)
+      window.clearInterval(timer)
+    }
+  }, [loadUser, economyPending])
 
   const saveProfile = useCallback((profile: SaveProfileInput): Promise<UpdateProfileResponse> => {
     const session = activeSession.current
@@ -107,7 +122,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       user: token && isAsyncSessionCurrent(dataSession, activeSession.current) ? user : null,
       loading,
       refreshUser,
-      addXp,
+      economyPending,
       saveProfile,
     }}>
       {children}

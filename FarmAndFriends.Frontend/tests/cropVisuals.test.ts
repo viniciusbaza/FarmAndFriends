@@ -84,6 +84,20 @@ test('switches from sprout to mature exactly at 50 percent', () => {
   }
 })
 
+test('a server-confirmed earlier deadline advances the growing crop visual', () => {
+  const now = at('2026-08-26T10:50:00.000Z')
+  assert.equal(resolveCropVisual(plot(), now)?.stage, 'sprout')
+  assert.equal(resolveCropVisual(plot({ readyAt: '2026-08-26T11:30:00.000Z' }), now)?.stage, 'mature')
+  assert.notEqual(resolveCropVisual(plot({ readyAt: '2026-08-26T11:30:00.000Z' }), now)?.stage, 'ready')
+})
+
+test('an immediately ready server snapshot uses ready art with a zero-length timeline', () => {
+  const instant = plot({ readyAt: plantedAt, isReady: true })
+  assert.equal(resolveCropVisual(instant, at(plantedAt))?.stage, 'ready')
+  assert.equal(getNextCropVisualTransitionAt(instant, at(plantedAt)), null)
+  assert.notEqual(resolveCropVisual(plot({ readyAt: plantedAt }), at(plantedAt))?.stage, 'ready')
+})
+
 test('uses mature art during initial growth and every later regrow', () => {
   assert.deepEqual(
     resolvePlotVisual(

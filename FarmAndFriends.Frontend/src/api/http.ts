@@ -1,32 +1,31 @@
-const API_URL = 'http://localhost:5204'
+import { advanceSessionScope, getSessionScope } from './sessionScope.ts'
+
+const API_URL = import.meta.env?.VITE_API_URL ?? 'http://localhost:5204'
 
 export class ApiError extends Error {
   status: number
+  code?: string
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
-let isRefreshing = false
-let refreshPromise: Promise<void> | null = null
+let pendingRefresh: { scope: number; promise: Promise<boolean> } | null = null
 
 function forceLogout() {
+  advanceSessionScope()
   localStorage.removeItem('access_token')
   window.location.href = '/login'
 }
 
 async function refreshAccessToken(): Promise<boolean> {
-  if (isRefreshing && refreshPromise) {
-    await refreshPromise
-    return true
-  }
-
-  isRefreshing = true
-
-  refreshPromise = (async () => {
+  const session = getSessionScope()
+  if (pendingRefresh?.scope === session) return pendingRefresh.promise
+  const promise = (async () => {
     const response = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
@@ -37,18 +36,14 @@ async function refreshAccessToken(): Promise<boolean> {
     }
 
     const data = await response.json()
+    if (session !== getSessionScope()) throw new Error('Sessão alterada.')
     localStorage.setItem('access_token', data.access_token)
-  })()
-
-  try {
-    await refreshPromise
     return true
-  } catch {
-    return false
-  } finally {
-    isRefreshing = false
-    refreshPromise = null
-  }
+  })().catch(() => false).finally(() => {
+    if (pendingRefresh?.promise === promise) pendingRefresh = null
+  })
+  pendingRefresh = { scope: session, promise }
+  return promise
 }
 
 async function request<T>(
@@ -57,6 +52,7 @@ async function request<T>(
   auth = false,
   retry = true
 ): Promise<T> {
+  const session = getSessionScope()
   const token = localStorage.getItem('access_token')
 
   const headers: HeadersInit = {
@@ -72,10 +68,12 @@ async function request<T>(
     headers,
     credentials: 'include',
   })
+  if (auth && session !== getSessionScope()) throw new Error('Sessão alterada. Atualize os dados da conta atual.')
 
   // 🔁 TOKEN EXPIRADO
   if (response.status === 401 && auth && retry) {
     const refreshed = await refreshAccessToken()
+    if (session !== getSessionScope()) throw new Error('Sessão alterada.')
 
     if (!refreshed){
       forceLogout()
@@ -88,6 +86,7 @@ async function request<T>(
   if (!response.ok) {
     const raw = await response.text()
     let message = raw
+    let code: string | undefined
 
     if (raw) {
       try {
@@ -96,8 +95,9 @@ async function request<T>(
         if (typeof parsed === 'string') {
           message = parsed
         } else if (parsed && typeof parsed === 'object') {
-          const problem = parsed as { detail?: string; title?: string }
+          const problem = parsed as { detail?: string; title?: string; code?: string }
           message = problem.detail || problem.title || raw
+          code = problem.code
         }
       } catch {
         // Plain-text responses are already suitable for display.
@@ -110,14 +110,16 @@ async function request<T>(
         : `Erro na requisi\u00e7\u00e3o (${response.status}).`
     }
 
-    throw new ApiError(response.status, message)
+    throw new ApiError(response.status, message, code)
   }
 
-  if (response.status === 204) {
-    return null as T
+  const data: T = response.status === 204 ? null as T : await response.json()
+  if (auth && session !== getSessionScope()) throw new Error('Sessão alterada.')
+  // One confirmation path for old and new producers. Effects are never wallet/XP deltas.
+  if (auth && init.method?.toUpperCase() === 'POST' && /^\/(plots|farms|shop)(\/|$)/.test(input)) {
+    window.dispatchEvent(new Event('economy:confirmed'))
   }
-
-  return response.json()
+  return data
 }
 
 // ===== Públicos =====

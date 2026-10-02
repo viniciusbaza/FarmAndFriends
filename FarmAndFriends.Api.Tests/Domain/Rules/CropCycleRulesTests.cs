@@ -133,6 +133,25 @@ public sealed class CropCycleRulesTests
             CropCycleRules.ValidateCurrentCycle(plot, seed));
     }
 
+    [Fact]
+    public void ValidateCurrentCycle_AcceptsImmediateReadinessButRejectsReadyBeforeStart()
+    {
+        var now = Utc(10);
+        var seed = Seed(1);
+        var plot = new Plot
+        {
+            SeedId = seed.Id,
+            PlantedAt = now,
+            CurrentHarvestCycle = 1,
+            CurrentHarvestCycleStartedAt = now,
+            ReadyAt = now,
+            RemainingYield = seed.CropAmount
+        };
+        CropCycleRules.ValidateCurrentCycle(plot, seed);
+        plot.ReadyAt = now.AddTicks(-1);
+        Assert.Throws<InvalidOperationException>(() => CropCycleRules.ValidateCurrentCycle(plot, seed));
+    }
+
     private static Seed Seed(
         int harvestCycles,
         TimeSpan? regrowTime = null) => new()

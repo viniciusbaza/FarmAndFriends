@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cercado — prova da cena real</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;font:13px Arial}#world{width:100%;height:100%}#world canvas{display:block}nav{position:fixed;top:0;left:0;right:0;z-index:10;background:#fff9;padding:6px;display:flex;gap:4px;flex-wrap:wrap}button,select{padding:7px}#modal{position:fixed;inset:95px 20px;z-index:20;background:#fffdebe8;border:3px solid #614327;padding:20px}#status{padding:5px;color:#234}</style>
+</head><body><nav>
+<select id="stage" aria-label="Estado"><option value="ready">Adulta pronta</option><option value="producing">Adulta produzindo</option><option value="chick">Filhote</option><option value="empty">Cercado vazio</option><option value="none">Sem cercado</option></select>
+<select id="cow-stage" aria-label="Estado da vaca"><option value="ready">Vaca pronta</option><option value="producing">Vaca produzindo</option><option value="calf">Bezerra</option><option value="none">Sem vaca</option></select>
+<select id="sheep-stage" aria-label="Estado da ovelha"><option value="ready">Lã pronta</option><option value="producing">Pelo curto</option><option value="lamb">Cordeiro</option><option value="none">Sem ovelha</option></select>
+<select id="pig-stage" aria-label="Estado do porco"><option value="ready">Adubo pronto</option><option value="producing">Produzindo adubo</option><option value="piglet">Filhote</option><option value="none">Sem porco</option></select>
+<select id="pig-animation" aria-label="Quadro da animação do porco"><option value="live">Ao vivo</option><option value="idle">Parado</option><option value="walk-a">Passo A</option><option value="walk-b">Passo B</option></select>
+<select id="species" aria-label="Espécie para feedback"><option value="pig">Porco</option><option value="sheep">Ovelha</option><option value="cow">Vaca</option><option value="chicken">Galinha</option></select>
+<button id="visit">Própria</button><button id="motion">Movimento normal</button>
+<button id="plots">9 lotes</button><button id="view">Overview</button><button id="sync">Sync ×5</button><button id="restart">Reconstruir</button><button id="volumes">4 volumes</button><button id="overlay">Modal</button><button id="help">Ajuda</button><button id="collect">Coleta</button><button id="steal">Roubo</button><span id="status">Fixture visual, sem API</span>
+</nav><div id="world"></div><div id="modal" hidden>Modal bloqueando o canvas. <button id="close">Fechar</button></div>
+<script type="module" src="./animal-world.ts"></script></body></html>
+

@@ -6,6 +6,9 @@ import { ShopBuyTab } from './ShopBuyTab'
 import { ShopFeedback } from './ShopFeedback'
 import { ShopSellTab } from './ShopSellTab'
 import { useShopItems } from './useShopItems'
+import { AnimalFeedback } from '../animals/AnimalFeedback'
+import { AnimalProductSell } from '../animals/AnimalProductSell'
+import { sellableAnimalProducts } from '../fertilizer/fertilizerState'
 
 type Props = {
   onClose: () => void
@@ -94,9 +97,9 @@ export function ShopPanel({ onClose }: Props) {
   const [tab, setTab] = useState<ShopTab>('buy')
   const [feedback, setFeedback] = useState<Feedback | null>(null)
 
-  const cropUnits = (inventory?.items ?? [])
-    .filter(item => item.itemType === 'Crop')
+  const cropUnits = (inventory?.items ?? []).filter(item => item.itemType === 'Crop')
     .reduce((total, item) => total + item.quantity, 0)
+    + sellableAnimalProducts(inventory?.items ?? []).reduce((total, item) => total + item.quantity, 0)
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
@@ -129,6 +132,12 @@ export function ShopPanel({ onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 text-emerald-950"
+      style={{
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+      }}
       onClick={event => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -139,15 +148,16 @@ export function ShopPanel({ onClose }: Props) {
         aria-modal="true"
         aria-labelledby="shop-panel-title"
         className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-emerald-50 shadow-2xl"
+        style={{ maxHeight: '88dvh' }}
         onClick={event => event.stopPropagation()}
       >
-        <header className="flex items-center justify-between gap-3 bg-emerald-700 px-4 py-3 text-white">
+        <header className="flex shrink-0 items-center justify-between gap-3 bg-emerald-700 px-4 py-3 text-white">
           <div>
             <h2 id="shop-panel-title" className="text-lg font-bold">
               🏪 Loja da Fazenda
             </h2>
             <p className="text-xs text-emerald-100">
-              Compre sementes e venda o resultado da sua colheita
+              Compre itens para sua fazenda e venda sua produção
             </p>
           </div>
           <PlayerSummary
@@ -168,17 +178,18 @@ export function ShopPanel({ onClose }: Props) {
         <PlayerSummary
           coins={inventory?.coins ?? null}
           premiumCoins={inventory?.premiumCoins ?? null}
-          className="flex gap-2 border-b border-emerald-200 bg-white/70 px-3 py-2 sm:hidden max-sm:landscape:hidden"
+          className="flex shrink-0 gap-2 border-b border-emerald-200 bg-white/70 px-3 py-2 sm:hidden max-sm:landscape:hidden"
           layout="stacked"
         />
 
         <nav
           aria-label="Ações da loja"
-          className="flex gap-1 border-b border-emerald-200 bg-white/70 p-2"
+          className="flex shrink-0 gap-1 border-b border-emerald-200 bg-white/70 p-2"
         >
           <button
             type="button"
             onClick={() => setTab('buy')}
+            aria-pressed={tab === 'buy'}
             className={tabButtonClass(tab === 'buy')}
           >
             🛒 Comprar
@@ -186,6 +197,7 @@ export function ShopPanel({ onClose }: Props) {
           <button
             type="button"
             onClick={() => setTab('sell')}
+            aria-pressed={tab === 'sell'}
             className={tabButtonClass(tab === 'sell')}
           >
             🧺 Vender
@@ -204,12 +216,13 @@ export function ShopPanel({ onClose }: Props) {
         </nav>
 
         {feedback && (
-          <div className="px-3 pt-3">
+          <div className="shrink-0 px-3 pt-3">
             <ShopFeedback message={feedback.message} type={feedback.type} />
           </div>
         )}
 
-        <div className="min-h-72 flex-1 overflow-y-auto p-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+          <div className="mb-3"><AnimalFeedback /></div>
           <div hidden={tab !== 'buy'}>
             <ShopBuyTab
               seeds={seeds}
@@ -228,16 +241,19 @@ export function ShopPanel({ onClose }: Props) {
             />
           </div>
           <div hidden={tab !== 'sell'}>
-            <ShopSellTab
-              seeds={seeds}
-              loadingSeeds={loadingSeeds}
-              seedsError={seedsError}
-              refreshSeeds={refreshSeeds}
-              inventory={inventory}
-              loading={loading}
-              onSuccess={reportSuccess}
-              onError={reportError}
-            />
+            <section aria-label="Produtos disponíveis para venda" className="grid gap-2 md:grid-cols-2">
+              <AnimalProductSell />
+              <ShopSellTab
+                seeds={seeds}
+                loadingSeeds={loadingSeeds}
+                seedsError={seedsError}
+                refreshSeeds={refreshSeeds}
+                inventory={inventory}
+                loading={loading}
+                onSuccess={reportSuccess}
+                onError={reportError}
+              />
+            </section>
           </div>
         </div>
       </div>

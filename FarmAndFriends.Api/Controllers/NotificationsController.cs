@@ -207,7 +207,10 @@ public class NotificationsController : ControllerBase
             notification.CareOpportunityId,
             notification.PestPlotId,
             notification.CreatedAt,
-            notification.ReadAt);
+            notification.ReadAt,
+            notification.AnimalId,
+            notification.AnimalCycleId,
+            notification.AnimalCompletionId);
 
     private bool TryGetCurrentUserId(out Guid userId)
     {

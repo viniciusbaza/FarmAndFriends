@@ -235,7 +235,7 @@ export function PlayerHUD({
   return (
     <>
       <div
-        className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-start justify-between gap-2 px-2 pb-2 sm:gap-4 md:px-4"
+        className="pointer-events-none fixed inset-x-0 top-0 z-50 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2 px-2 pb-2 sm:gap-x-4 md:px-4"
         style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
       >
         <section
@@ -382,14 +382,12 @@ export function PlayerHUD({
             <span className="hidden xl:inline">Sair</span>
           </button>
         </nav>
-      </div>
-
-      {isVisiting && (
-        <div className="pointer-events-none fixed left-2 right-2 top-20 z-40 flex items-center justify-center sm:left-1/2 sm:right-auto sm:top-24 sm:-translate-x-1/2">
-          <div className="flex max-w-full items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50/95 px-3 py-2 text-amber-950 shadow-lg backdrop-blur-sm">
-            <span className="min-w-0 truncate text-xs sm:text-sm">
-              👀 Visitando {farm?.name} de <strong>{session.ownerUsername}</strong>
-            </span>
+        {isVisiting && (
+          <div className="col-span-2 flex min-w-0 items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50/95 px-3 py-2 text-amber-950 shadow-lg backdrop-blur-sm sm:col-span-1 sm:row-start-2 sm:w-0 sm:min-w-full">
+            <div className="min-w-0 flex-1 text-xs leading-snug [overflow-wrap:anywhere] sm:text-sm">
+              <p>👀 Visitando {farm?.name}</p>
+              <p>De <strong>{session.ownerUsername}</strong></p>
+            </div>
             <button
               type="button"
               onClick={returnToOwnFarm}
@@ -398,8 +396,8 @@ export function PlayerHUD({
               ⬅ Voltar
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {toastNotification && (
         <div

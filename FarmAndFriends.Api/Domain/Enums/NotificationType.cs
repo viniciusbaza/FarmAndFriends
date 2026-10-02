@@ -9,5 +9,8 @@ public enum NotificationType
     CropCaredFor = 4,
     PestConsumed = 5,
     PestRemoved = 6,
-    PestProtectionApplied = 7
+    PestProtectionApplied = 7,
+    AnimalHelped = 8,
+    AnimalProductStolen = 9,
+    PlotFertilized = 10
 }

@@ -1,0 +1,61 @@
+{
+  "frames": {
+    "milk-empty": {
+      "pivot": {
+        "x": 0.54,
+        "y": 0.7575757575757576
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 1254,
+        "w": 627,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 1254,
+        "w": 627
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 0,
+        "h": 1254,
+        "w": 627,
+        "x": 0
+      }
+    },
+    "milk-full": {
+      "pivot": {
+        "x": 0.54,
+        "y": 0.7575757575757576
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 1254,
+        "w": 627,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 1254,
+        "w": 627
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 0,
+        "h": 1254,
+        "w": 627,
+        "x": 627
+      }
+    }
+  },
+  "meta": {
+    "image": "milk-pails.png",
+    "format": "RGBA8888",
+    "size": {
+      "h": 1254,
+      "w": 1254
+    },
+    "scale": "1"
+  }
+}

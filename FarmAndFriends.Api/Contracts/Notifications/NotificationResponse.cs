@@ -13,5 +13,8 @@ public record NotificationResponse(
     Guid? CareOpportunityId,
     Guid? PestPlotId,
     DateTime CreatedAt,
-    DateTime? ReadAt
+    DateTime? ReadAt,
+    Guid? AnimalId = null,
+    Guid? AnimalCycleId = null,
+    Guid? AnimalCompletionId = null
 );

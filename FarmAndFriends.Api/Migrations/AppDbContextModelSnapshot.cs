@@ -22,6 +22,180 @@ namespace FarmAndFriends.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.AnimalActionCompletion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AnimalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CoinsGained")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CycleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DisplayNameAtAction")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("EffectJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("IdempotencyKey")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("XpGained")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnimalId");
+
+                    b.HasIndex("CycleId")
+                        .IsUnique()
+                        .HasFilter("\"Action\" = 'collect'");
+
+                    b.HasIndex("FarmId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("ActorUserId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("ActorUserId", "Action", "CompletedAt");
+
+                    b.HasIndex("ActorUserId", "CycleId", "Action")
+                        .IsUnique()
+                        .HasFilter("\"Action\" IN ('help', 'steal')");
+
+                    b.HasIndex("CycleId", "CompletedAt", "Id");
+
+                    b.HasIndex("ActorUserId", "OwnerUserId", "Action", "CompletedAt");
+
+                    b.ToTable("AnimalActionCompletions", t =>
+                        {
+                            t.HasCheckConstraint("CK_AnimalCompletions_Rewards", "\"CoinsGained\" >= 0 AND \"XpGained\" >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.AnimalEnclosure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Revision")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Slot")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmId")
+                        .IsUnique();
+
+                    b.ToTable("AnimalEnclosures", t =>
+                        {
+                            t.HasCheckConstraint("CK_AnimalEnclosures_Revision", "\"Revision\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.AnimalProductionCycle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BaseYield")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CollectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FarmAnimalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("HelpBonusLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OwnerReserve")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PolicyJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProductId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("ProtectedHelpBonus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ReadyAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("StolenBase")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TheftLimit")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmAnimalId")
+                        .IsUnique()
+                        .HasFilter("\"CollectedAt\" IS NULL");
+
+                    b.HasIndex("FarmAnimalId", "StartsAt");
+
+                    b.ToTable("AnimalProductionCycles", t =>
+                        {
+                            t.HasCheckConstraint("CK_AnimalCycles_Time", "\"ReadyAt\" > \"StartsAt\" AND (\"CollectedAt\" IS NULL OR \"CollectedAt\" >= \"ReadyAt\")");
+
+                            t.HasCheckConstraint("CK_AnimalCycles_Yield", "\"BaseYield\" > 0 AND \"OwnerReserve\" > 0 AND \"OwnerReserve\" <= \"BaseYield\" AND \"TheftLimit\" >= 0 AND \"TheftLimit\" <= \"BaseYield\" - \"OwnerReserve\" AND \"StolenBase\" >= 0 AND \"StolenBase\" <= \"TheftLimit\" AND \"HelpBonusLimit\" > 0 AND \"ProtectedHelpBonus\" >= 0 AND \"ProtectedHelpBonus\" <= \"HelpBonusLimit\"");
+                        });
+                });
+
             modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.CropCareCompletion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -106,6 +280,104 @@ namespace FarmAndFriends.Api.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Farms");
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.FarmAnimal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AnimalEnclosureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnimalTypeId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("InitialPolicyJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("MaturesAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnimalEnclosureId", "FarmId");
+
+                    b.HasIndex("FarmId", "AnimalTypeId")
+                        .IsUnique();
+
+                    b.ToTable("FarmAnimals", t =>
+                        {
+                            t.HasCheckConstraint("CK_FarmAnimals_Maturity", "\"MaturesAt\" > \"PurchasedAt\"");
+                        });
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.FertilizerApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorUsernameAtAction")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CycleStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FarmId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("HarvestCycle")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("IdempotencyKey")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PlotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("PreviousReadyAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ReadyAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RemainingQuantityAfter")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("ActorUserId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("PlotId", "HarvestCycle", "CycleStartedAt")
+                        .IsUnique();
+
+                    b.ToTable("FertilizerApplications");
                 });
 
             modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.Friendship", b =>
@@ -302,6 +574,15 @@ namespace FarmAndFriends.Api.Migrations
                     b.Property<Guid?>("ActorUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AnimalCompletionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AnimalCycleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AnimalId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("CareOpportunityId")
                         .HasColumnType("uuid");
 
@@ -332,6 +613,13 @@ namespace FarmAndFriends.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ActorUserId");
+
+                    b.HasIndex("AnimalCompletionId")
+                        .IsUnique();
+
+                    b.HasIndex("AnimalCycleId");
+
+                    b.HasIndex("AnimalId");
 
                     b.HasIndex("CareOpportunityId")
                         .IsUnique();
@@ -500,7 +788,7 @@ namespace FarmAndFriends.Api.Migrations
                         {
                             t.HasCheckConstraint("CK_Plots_Coordinates_NonNegative", "\"X\" >= 0 AND \"Y\" >= 0");
 
-                            t.HasCheckConstraint("CK_Plots_CurrentHarvestCycleStartedAt_Consistent", "(\"SeedId\" IS NULL AND \"PlantedAt\" IS NULL AND \"ReadyAt\" IS NULL AND \"RemainingYield\" IS NULL AND \"CurrentHarvestCycleStartedAt\" IS NULL) OR (\"SeedId\" IS NOT NULL AND \"PlantedAt\" IS NOT NULL AND \"ReadyAt\" IS NOT NULL AND \"RemainingYield\" IS NOT NULL AND \"CurrentHarvestCycleStartedAt\" IS NOT NULL AND \"ReadyAt\" > \"CurrentHarvestCycleStartedAt\")");
+                            t.HasCheckConstraint("CK_Plots_CurrentHarvestCycleStartedAt_Consistent", "(\"SeedId\" IS NULL AND \"PlantedAt\" IS NULL AND \"ReadyAt\" IS NULL AND \"RemainingYield\" IS NULL AND \"CurrentHarvestCycleStartedAt\" IS NULL) OR (\"SeedId\" IS NOT NULL AND \"PlantedAt\" IS NOT NULL AND \"ReadyAt\" IS NOT NULL AND \"RemainingYield\" IS NOT NULL AND \"CurrentHarvestCycleStartedAt\" IS NOT NULL AND \"ReadyAt\" >= \"CurrentHarvestCycleStartedAt\")");
 
                             t.HasCheckConstraint("CK_Plots_CurrentHarvestCycle_Consistent", "(\"SeedId\" IS NULL AND \"CurrentHarvestCycle\" IS NULL) OR (\"SeedId\" IS NOT NULL AND \"CurrentHarvestCycle\" IS NOT NULL AND \"CurrentHarvestCycle\" >= 1)");
 
@@ -947,6 +1235,55 @@ namespace FarmAndFriends.Api.Migrations
                     b.ToTable("TheftLogs");
                 });
 
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.AnimalActionCompletion", b =>
+                {
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.FarmAnimal", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.AnimalProductionCycle", null)
+                        .WithMany()
+                        .HasForeignKey("CycleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.Farm", null)
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.AnimalEnclosure", b =>
+                {
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.Farm", null)
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.AnimalProductionCycle", b =>
+                {
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.FarmAnimal", null)
+                        .WithMany()
+                        .HasForeignKey("FarmAnimalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.CropCareCompletion", b =>
                 {
                     b.HasOne("FarmAndFriends.Api.Domain.Entities.User", "OwnerUser")
@@ -983,6 +1320,43 @@ namespace FarmAndFriends.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.FarmAnimal", b =>
+                {
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.AnimalEnclosure", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalEnclosureId", "FarmId")
+                        .HasPrincipalKey("Id", "FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.FertilizerApplication", b =>
+                {
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.Farm", null)
+                        .WithMany()
+                        .HasForeignKey("FarmId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.Plot", null)
+                        .WithMany()
+                        .HasForeignKey("PlotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FarmAndFriends.Api.Domain.Entities.Friendship", b =>
@@ -1075,6 +1449,21 @@ namespace FarmAndFriends.Api.Migrations
                     b.HasOne("FarmAndFriends.Api.Domain.Entities.User", "ActorUser")
                         .WithMany()
                         .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.AnimalActionCompletion", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalCompletionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.AnimalProductionCycle", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalCycleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FarmAndFriends.Api.Domain.Entities.FarmAnimal", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("FarmAndFriends.Api.Domain.Entities.Friendship", "Friendship")

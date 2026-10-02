@@ -1,6 +1,7 @@
 using FarmAndFriends.Api.Contracts.Farms;
 using FarmAndFriends.Api.Contracts.Pests;
 using FarmAndFriends.Api.Contracts.Land;
+using FarmAndFriends.Api.Contracts.Animals;
 using FarmAndFriends.Api.Domain.Entities;
 using FarmAndFriends.Api.Domain.Rules;
 using FarmAndFriends.Api.Domain.Services;
@@ -15,7 +16,9 @@ public static class FarmMapper
         IReadOnlyDictionary<Guid, PlotCropCareState> careStates,
         DateTime? nextPestCheckAt = null,
         LandOfferResponse? landOffer = null,
-        bool isOwnerView = true)
+        bool isOwnerView = true,
+        AnimalStateEnvelope? animalState = null,
+        IReadOnlyDictionary<Guid, DateTime>? fertilizedAt = null)
     {
         return new FarmResponse(
             farm.Id,
@@ -30,17 +33,21 @@ public static class FarmMapper
                     now,
                     careStates.TryGetValue(p.Id, out var careState)
                         ? careState
-                        : null))
+                        : null,
+                    fertilizedAt != null && fertilizedAt.TryGetValue(p.Id, out var appliedAt)
+                        ? appliedAt : null))
                 .ToList(),
             nextPestCheckAt,
-            isOwnerView ? landOffer : null
+            isOwnerView ? landOffer : null,
+            animalState ?? new AnimalStateEnvelope(farm.Id, null, 0, now)
         );
     }
 
     private static PlotResponse ToPlotResponse(
         Plot p,
         DateTime now,
-        PlotCropCareState? careState)
+        PlotCropCareState? careState,
+        DateTime? fertilizedAt)
     {
         if (!p.Unlocked)
         {
@@ -52,12 +59,14 @@ public static class FarmMapper
                 SeedId: null,
                 PlantedAt: null,
                 CurrentHarvestCycle: null,
+                CurrentHarvestCycleStartedAt: null,
                 IsReady: false,
                 ReadyAt: null,
                 RemainingYield: null,
                 ProtectedUntil: null,
                 Pest: null,
-                Care: null);
+                Care: null,
+                FertilizedAt: null);
         }
 
         var isReady = p.ReadyAt != null && p.ReadyAt <= now;
@@ -70,12 +79,14 @@ public static class FarmMapper
             p.SeedId,
             p.PlantedAt,
             p.CurrentHarvestCycle,
+            p.CurrentHarvestCycleStartedAt,
             isReady,
             p.ReadyAt,
             isReady ? p.RemainingYield : null,
             PestRules.IsProtected(p, now) ? p.ProtectedUntil : null,
             ToPlotPestResponse(p),
-            ToPlotCareResponse(careState)
+            ToPlotCareResponse(careState),
+            p.SeedId == null ? null : fertilizedAt
         );
     }
 

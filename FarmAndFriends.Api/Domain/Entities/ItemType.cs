@@ -4,5 +4,6 @@ public enum ItemType
 {
     Seed = 1,
     Crop = 2,
-    Item = 3
+    Item = 3,
+    AnimalProduct = 4
 }

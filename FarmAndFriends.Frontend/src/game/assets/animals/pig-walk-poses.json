@@ -1,0 +1,33 @@
+{
+  "frames": {
+    "piglet-walk-a": {
+      "frame": { "x": 0, "y": 0, "w": 768, "h": 500 },
+      "rotated": false, "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 500 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.5814, "y": 0.8984 }
+    },
+    "piglet-walk-b": {
+      "frame": { "x": 768, "y": 0, "w": 768, "h": 500 },
+      "rotated": false, "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 500 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.4466, "y": 0.9316 }
+    },
+    "adult-ready-walk-a": {
+      "frame": { "x": 0, "y": 512, "w": 768, "h": 512 },
+      "rotated": false, "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 512 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.5716, "y": 0.8164 }
+    },
+    "adult-ready-walk-b": {
+      "frame": { "x": 768, "y": 512, "w": 768, "h": 512 },
+      "rotated": false, "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 512 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.4616, "y": 0.8711 }
+    }
+  },
+  "meta": { "image": "pig-walk-poses.png", "format": "RGBA8888", "size": { "w": 1536, "h": 1024 }, "scale": "1" }
+}

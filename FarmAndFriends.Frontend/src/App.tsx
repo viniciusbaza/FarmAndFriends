@@ -4,6 +4,7 @@ import Game from './pages/Game'
 import Register from './pages/Register'
 import { useAuth } from './auth/useAuth'
 import { FarmProvider } from './farm/FarmContext'
+import { AnimalProvider } from './animals/AnimalProvider'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -19,7 +20,9 @@ export default function App() {
         <Route path="/game" element={
           <PrivateRoute>
             <FarmProvider>
+              <AnimalProvider>
               <Game />
+              </AnimalProvider>
             </FarmProvider>
           </PrivateRoute>
         } />

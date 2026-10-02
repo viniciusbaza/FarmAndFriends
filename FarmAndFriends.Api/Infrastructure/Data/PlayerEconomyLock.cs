@@ -6,7 +6,8 @@ namespace FarmAndFriends.Api.Infrastructure.Data;
 public static class PlayerEconomyLock
 {
     // Global acquisition order for mutable gameplay state:
-    // User -> canonical Friendship -> Farm -> ordered Plots -> Inventory ->
+    // User -> canonical Friendship -> Farm -> ordered Plots -> Enclosure ->
+    // ordered Animals -> ordered Cycles -> Inventory ->
     // ordered InventoryItems -> completion/ledger rows. A caller must not
     // acquire an earlier lock after a later one.
     public static async Task<User?> LockAsync(

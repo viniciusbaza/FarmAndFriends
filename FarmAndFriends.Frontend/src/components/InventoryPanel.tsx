@@ -3,6 +3,8 @@ import { useInventory } from '../inventory/useInventory'
 import { useSeeds } from '../seeds/useSeeds'
 import type { InventoryItem } from '../types/Inventory'
 import { useShopItems } from '../shop/useShopItems'
+import { useAnimals } from '../animals/useAnimals'
+import { productPresentation } from '../animals/animalPresentation'
 
 type Props = {
   onClose: () => void
@@ -24,6 +26,12 @@ export function InventoryPanel({ onClose }: Props) {
   const { inventory, loading, refreshInventory } = useInventory()
   const { getSeedByItem } = useSeeds()
   const { getItem } = useShopItems()
+  const { catalog } = useAnimals()
+  function animalProduct(id: string) {
+    const product = catalog?.products.find(product => product.itemId === id)
+    const presentation = productPresentation(id)
+    return { name: product?.displayName ?? presentation.name, icon: presentation.icon }
+  }
   const [filter, setFilter] = useState<InventoryFilter>('all')
 
   useEffect(() => {
@@ -45,20 +53,21 @@ export function InventoryPanel({ onClose }: Props) {
   const otherUnits = items
     .filter(item => item.itemType === 'Item')
     .reduce((total, item) => total + item.quantity, 0)
+  const animalUnits = items.filter(item => item.itemType === 'AnimalProduct').reduce((sum, item) => sum + item.quantity, 0)
   const visibleItems = items
     .filter(item => filter === 'all' || item.itemType === filter)
     .sort((left, right) => {
-      const leftSeed = left.itemType === 'Item'
+      const leftSeed = left.itemType === 'Item' || left.itemType === 'AnimalProduct'
         ? undefined
         : getSeedByItem(left.itemType, left.itemId)
-      const rightSeed = right.itemType === 'Item'
+      const rightSeed = right.itemType === 'Item' || right.itemType === 'AnimalProduct'
         ? undefined
         : getSeedByItem(right.itemType, right.itemId)
-      const leftName = left.itemType === 'Item'
+      const leftName = left.itemType === 'AnimalProduct' ? animalProduct(left.itemId).name : left.itemType === 'Item'
         ? (getItem(left.itemId)?.name ?? left.itemId)
         : (left.itemType === 'Crop' ? leftSeed?.cropName : leftSeed?.name)
           ?? left.itemId
-      const rightName = right.itemType === 'Item'
+      const rightName = right.itemType === 'AnimalProduct' ? animalProduct(right.itemId).name : right.itemType === 'Item'
         ? (getItem(right.itemId)?.name ?? right.itemId)
         : (right.itemType === 'Crop' ? rightSeed?.cropName : rightSeed?.name)
           ?? right.itemId
@@ -109,7 +118,7 @@ export function InventoryPanel({ onClose }: Props) {
             className={filterButtonClass(filter === 'all')}
             onClick={() => setFilter('all')}
           >
-            Tudo ({numberFormatter.format(seedUnits + cropUnits + otherUnits)})
+            Tudo ({numberFormatter.format(seedUnits + cropUnits + otherUnits + animalUnits)})
           </button>
           <button
             type="button"
@@ -131,6 +140,9 @@ export function InventoryPanel({ onClose }: Props) {
             onClick={() => setFilter('Item')}
           >
             Outros ({numberFormatter.format(otherUnits)})
+          </button>
+          <button type="button" className={filterButtonClass(filter === 'AnimalProduct')} onClick={() => setFilter('AnimalProduct')}>
+            Produtos animais ({numberFormatter.format(animalUnits)})
           </button>
         </nav>
 
@@ -166,12 +178,12 @@ export function InventoryPanel({ onClose }: Props) {
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {visibleItems.map(item => {
-                const catalogItem = item.itemType === 'Item'
+                const catalogItem = item.itemType === 'AnimalProduct' ? animalProduct(item.itemId) : item.itemType === 'Item'
                   ? getItem(item.itemId)
                   : getSeedByItem(item.itemType, item.itemId)
                 const isSeed = item.itemType === 'Seed'
                 const isCrop = item.itemType === 'Crop'
-                const catalogName = isCrop && catalogItem && 'cropName' in catalogItem
+                const catalogName = isCrop && catalogItem && 'cropName' in catalogItem && typeof catalogItem.cropName === 'string'
                   ? catalogItem.cropName
                   : catalogItem?.name
 
@@ -201,7 +213,7 @@ export function InventoryPanel({ onClose }: Props) {
                           ? 'Semente para plantio'
                           : isCrop
                             ? 'Colheita pronta para venda'
-                            : 'Item especial'}
+                            : item.itemType === 'AnimalProduct' ? item.itemId === 'fertilizer' ? 'Adubo para usar em plantações' : 'Produto animal para venda' : 'Item especial'}
                       </p>
                     </div>
                     <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-800">

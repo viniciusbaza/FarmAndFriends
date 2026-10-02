@@ -2,6 +2,9 @@ import { NotificationType, type SocialNotification } from '../types/Social'
 
 export function getNotificationTitle(notification: SocialNotification) {
   switch (notification.type) {
+    case NotificationType.AnimalHelped: return 'Cuidado no cercado'
+    case NotificationType.AnimalProductStolen: return 'Roubo no cercado'
+    case NotificationType.PlotFertilized: return 'Plantação adubada'
     case NotificationType.FriendRequestReceived:
       return 'Nova solicitação de amizade'
     case NotificationType.FriendRequestAccepted:
@@ -25,6 +28,9 @@ export function getNotificationTitle(notification: SocialNotification) {
 
 export function getNotificationIcon(notification: SocialNotification) {
   switch (notification.type) {
+    case NotificationType.AnimalHelped: return '💛'
+    case NotificationType.AnimalProductStolen: return '🥷'
+    case NotificationType.PlotFertilized: return '🌿'
     case NotificationType.FriendRequestReceived:
       return '👋'
     case NotificationType.FriendRequestAccepted:
@@ -53,6 +59,9 @@ export function getNotificationMessage(notification: SocialNotification) {
   const actor = notification.actorUsername ?? 'Um jogador'
 
   switch (notification.type) {
+    case NotificationType.AnimalHelped: return `${actor} ajudou um animal do cercado.`
+    case NotificationType.AnimalProductStolen: return `${actor} roubou parte da produção do cercado.`
+    case NotificationType.PlotFertilized: return `${actor} adubou uma plantação na sua fazenda.`
     case NotificationType.FriendRequestReceived:
       return `${actor} enviou uma solicitação de amizade.`
     case NotificationType.FriendRequestAccepted:
