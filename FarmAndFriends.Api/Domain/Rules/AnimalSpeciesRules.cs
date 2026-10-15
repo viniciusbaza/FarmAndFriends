@@ -12,7 +12,8 @@ public static class AnimalSpeciesRules
         new AnimalSpeciesDefinition("chicken", "Galinha", "chick", "egg", "Ovos", "ovo(s)"),
         new AnimalSpeciesDefinition("cow", "Vaca", "calf", "milk", "Leite", "leite(s)"),
         new AnimalSpeciesDefinition("sheep", "Ovelha", "lamb", "wool", "Lã", "lã(s)"),
-        new AnimalSpeciesDefinition("pig", "Porco", "piglet", "fertilizer", "Adubo", "adubo(s)")
+        new AnimalSpeciesDefinition("pig", "Porco", "piglet", "fertilizer", "Adubo", "adubo(s)"),
+        new AnimalSpeciesDefinition("peacock", "Pavão", "peachick", "feather", "Penas", "pena(s)")
     });
 
     public static AnimalSpeciesDefinition? Find(string? id) => Available.SingleOrDefault(s => s.Id == id);
@@ -23,6 +24,7 @@ public static class AnimalSpeciesRules
             "cow" => policy.CowPriceCoins,
             "sheep" => policy.SheepPriceCoins,
             "pig" => policy.PigPriceCoins,
+            "peacock" => policy.PeacockPriceCoins,
             _ => policy.ChickenPriceCoins
         };
     public static int MinLevel(AnimalSpeciesDefinition species, AnimalEnclosureOptions policy) =>
@@ -31,6 +33,7 @@ public static class AnimalSpeciesRules
             "cow" => policy.CowMinLevel,
             "sheep" => policy.SheepMinLevel,
             "pig" => policy.PigMinLevel,
+            "peacock" => policy.PeacockMinLevel,
             _ => policy.ChickenMinLevel
         };
     public static int SellPrice(AnimalSpeciesDefinition species, AnimalEnclosureOptions policy) =>
@@ -38,6 +41,7 @@ public static class AnimalSpeciesRules
         {
             "cow" => policy.MilkSellPriceCoins,
             "sheep" => policy.WoolSellPriceCoins,
+            "peacock" => policy.FeatherSellPriceCoins,
             _ => policy.EggSellPriceCoins
         };
 }

@@ -222,22 +222,22 @@ public sealed class FertilizerIntegrationTests
     }
 
     [PostgresFact]
-    public async Task AnimalHelp_SameVisitorRewardsAllFourAnimalCycles()
+    public async Task AnimalHelp_SameVisitorRewardsAllFiveAnimalCyclesAndCannotRepeat()
     {
         var s = await AnimalEnclosureIntegrationTests.Scenario.Create();
         await using (var setup = s.Db())
         {
-            (await setup.Users.SingleAsync(user => user.Id == s.Owner)).Level = 7;
+            (await setup.Users.SingleAsync(user => user.Id == s.Owner)).Level = 8;
             await setup.SaveChangesAsync();
         }
         await s.Command(s.Owner, "buy-animal-enclosure");
-        foreach (var species in new[] { "chicken", "cow", "sheep", "pig" })
+        foreach (var species in new[] { "chicken", "cow", "sheep", "pig", "peacock" })
             await s.Command(s.Owner, "buy-animal", item: species);
 
         var young = (await s.State(s.Owner)).Enclosure!.Animals;
         s.Clock.Now = young.Max(animal => animal.MaturesAt);
         var producing = (await s.State(s.Owner)).Enclosure!.Animals;
-        Assert.Equal(4, producing.Count);
+        Assert.Equal(5, producing.Count);
         Assert.All(producing, animal => Assert.False(animal.Cycle!.IsReady));
 
         var helper = s.Visitors[0];
@@ -266,15 +266,25 @@ public sealed class FertilizerIntegrationTests
             Assert.False(animal.Permissions.RewardAvailable);
             Assert.Equal("HELP_ALREADY_REGISTERED", animal.Permissions.HelpReason);
             Assert.Null(animal.Permissions.NextRewardAt);
+            Assert.Equal(0, animal.Cycle.BaseYield);
+            Assert.Equal(0, animal.Cycle.ProtectedHelpBonus);
+            Assert.Equal(0, animal.Cycle.OwnerCollectible);
+            Assert.Null(animal.Cycle.Helpers);
         });
 
+        var repeats = await Task.WhenAll(producing.Select(animal =>
+            s.Attempt(helper, "help", s.Farm, animal.Id, animal.Cycle!.Id)));
+        Assert.All(repeats, result => Assert.Equal("HELP_ALREADY_REGISTERED", result.Error));
+
         await using var db = s.Db();
-        Assert.Equal(4, await db.AnimalActionCompletions.CountAsync(completion => completion.ActorUserId == helper
+        Assert.Equal(5, await db.AnimalActionCompletions.CountAsync(completion => completion.ActorUserId == helper
             && completion.Action == "help"));
-        Assert.Equal(4, await db.Notifications.CountAsync(notification => notification.ActorUserId == helper
+        Assert.Equal(5, await db.Notifications.CountAsync(notification => notification.ActorUserId == helper
             && notification.Type == NotificationType.AnimalHelped));
-        Assert.Equal(20, (await db.Users.SingleAsync(user => user.Id == helper)).CurrentXp);
-        Assert.Equal(20008, (await db.Inventories.SingleAsync(inventory => inventory.UserId == helper)).Coins);
+        Assert.Equal(25, (await db.Users.SingleAsync(user => user.Id == helper)).CurrentXp);
+        Assert.Equal(20010, (await db.Inventories.SingleAsync(inventory => inventory.UserId == helper)).Coins);
+        Assert.All(await db.AnimalProductionCycles.Where(cycle => producing.Select(animal => animal.Id)
+            .Contains(cycle.FarmAnimalId)).ToListAsync(), cycle => Assert.Equal(1, cycle.ProtectedHelpBonus));
     }
 
     [PostgresFact]

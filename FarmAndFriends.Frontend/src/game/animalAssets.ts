@@ -9,6 +9,10 @@ import lambImage from './assets/animals/lamb-poses.png'
 import lambAtlas from './assets/animals/lamb-poses.json'
 import pigImage from './assets/animals/pig-cycle-poses.png'
 import pigAtlas from './assets/animals/pig-cycle-poses.json'
+import peacockImage from './assets/animals/peacock-adult-poses.png'
+import peacockAtlas from './assets/animals/peacock-adult-poses.json'
+import peachickImage from './assets/animals/peachick-poses.png'
+import peachickAtlas from './assets/animals/peachick-poses.json'
 import milkImage from './assets/animals/milk-pails.png'
 import milkAtlas from './assets/animals/milk-pails.json'
 import chickenNestsImage from './assets/animals/chicken-nests.png'
@@ -21,6 +25,8 @@ export const COW_ATLAS = 'cow-poses'
 export const SHEEP_ATLAS = 'sheep-poses'
 export const LAMB_ATLAS = 'lamb-poses'
 export const PIG_ATLAS = 'pig-cycle-poses'
+export const PEACOCK_ATLAS = 'peacock-adult-poses'
+export const PEACHICK_ATLAS = 'peachick-poses'
 export const MILK_ATLAS = 'milk-pails'
 export const CHICKEN_NESTS_ATLAS = 'chicken-nests'
 export const ENCLOSURE_WOOD_ATLAS = 'enclosure-wood-transparent'
@@ -41,6 +47,8 @@ const assets = [
   { key: SHEEP_ATLAS, image: sheepImage, atlas: sheepAtlas },
   { key: LAMB_ATLAS, image: lambImage, atlas: lambAtlas },
   { key: PIG_ATLAS, image: pigImage, atlas: pigAtlas },
+  { key: PEACOCK_ATLAS, image: peacockImage, atlas: peacockAtlas },
+  { key: PEACHICK_ATLAS, image: peachickImage, atlas: peachickAtlas },
   { key: MILK_ATLAS, image: milkImage, atlas: milkAtlas },
   { key: CHICKEN_NESTS_ATLAS, image: chickenNestsImage, atlas: chickenNestsAtlas },
   { key: ENCLOSURE_WOOD_ATLAS, image: enclosureWoodImage, atlas: enclosureWoodAtlas },
@@ -89,3 +97,15 @@ export function pigFootOrigin(frame: string) {
 }
 
 export const MILK_METRICS = { scale: 18 / 593, originX: 0.54, originY: 950 / 1254 }
+
+/** Approved v6 uses original v1 art and one fixed scale per age/open fan. */
+export const PEACOCK_METRICS = {
+  adult: { scale: 36 / 375 },
+  peachick: { scale: 26 / 505 },
+} as const
+
+export function peacockFootOrigin(frame: string, young: boolean) {
+  return young
+    ? peachickAtlas.frames[frame as keyof typeof peachickAtlas.frames]?.pivot ?? peachickAtlas.frames['peachick-idle'].pivot
+    : peacockAtlas.frames[frame as keyof typeof peacockAtlas.frames]?.pivot ?? peacockAtlas.frames['producing-idle'].pivot
+}

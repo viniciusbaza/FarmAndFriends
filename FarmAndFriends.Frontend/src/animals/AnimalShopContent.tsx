@@ -1,7 +1,7 @@
 import { useAnimals } from './useAnimals'
 import { useUser } from '../user/useUser'
 import { animalReason } from './animalMessages'
-import { animalPresentation } from './animalPresentation'
+import { animalAcquiredLabel, animalPresentation } from './animalPresentation'
 
 const numberFormatter = new Intl.NumberFormat('pt-BR')
 
@@ -70,7 +70,7 @@ export function AnimalShopContent() {
         <button type="button" disabled={!animal.canBuy || busy || !!pending || !user}
           onClick={() => user && void execute({ action: 'buy-animal', farmId: user.farmId, animalTypeId: animal.animalTypeId })}
           className="min-h-11 w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600">
-          {animal.owned ? `${animal.displayName} ${animal.animalTypeId === 'pig' ? 'adquirido' : 'adquirida'}` : busy ? 'Aguarde…' : animalPresentation(animal.animalTypeId).buyLabel}
+          {animal.owned ? `${animal.displayName} ${animalAcquiredLabel(animal.animalTypeId)}` : busy ? 'Aguarde…' : animalPresentation(animal.animalTypeId).buyLabel}
         </button>
       </div>
     </article>)}

@@ -1,0 +1,109 @@
+{
+  "frames": {
+    "peachick-idle": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.5488,
+        "y": 0.8715
+      }
+    },
+    "peachick-walk-a": {
+      "frame": {
+        "x": 543,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.541434,
+        "y": 0.875644
+      }
+    },
+    "peachick-walk-b": {
+      "frame": {
+        "x": 1086,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.539592,
+        "y": 0.881169
+      }
+    },
+    "peachick-preen": {
+      "frame": {
+        "x": 1629,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.5746,
+        "y": 0.8729
+      }
+    }
+  },
+  "meta": {
+    "image": "peachick-poses.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 2172,
+      "h": 724
+    },
+    "scale": "1"
+  }
+}

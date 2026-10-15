@@ -38,21 +38,30 @@ export function calculateAnimalLayout(plots: WorldBounds) {
     structure.x + structure.width * (1 - structure.originX),
     structure.y + structure.height * (1 - structure.originY),
   )
-  // Four nonoverlapping volumes within the shared diamond. Only species
+  // Five nonoverlapping volumes within the shared diamond. Only species
   // present in the authoritative snapshot are instantiated.
   const reserved = [
-    { x: centerX - 55, y: centerY + 15, width: 50, height: 30 }, //Galinha
-    { x: centerX - 14, y: centerY - 24, width: 50, height: 36 }, //Vaca
-    { x: centerX + 6, y: centerY + 40, width: 44, height: 32 },  //Ovelha
-    { x: centerX + 48, y: centerY + 20, width: 38, height: 26 }, //Porco
+    { x: centerX - 65, y: centerY + 12, width: 44, height: 34 }, // Galinha
+    { x: centerX - 10, y: centerY - 28, width: 50, height: 38 }, // Vaca
+    { x: centerX + 10, y: centerY + 44, width: 36, height: 29 }, // Ovelha
+    { x: centerX + 56, y: centerY + 18, width: 32, height: 34 }, // Porco
+    { x: centerX - 6, y: centerY + 10, width: 38, height: 28 }, // Pavão
   ]
-  return { centerX, centerY, ground, structure, bounds, reserved,
-    chicken: { x: centerX - 50, y: centerY + 10 },
-    cow: { x: centerX - 5, y: centerY - 24 },
-    sheep: { x: centerX + 6, y: centerY + 40 },
-    pig: { x: centerX + 48, y: centerY + 20 },
-    milk: { x: centerX - 32, y: centerY - 21 },
-    nest: { x: centerX - 73, y: centerY + 6 } }
+  // Current disjoint hit rectangles; the peacock reaches its upper body.
+  const targets = reserved.map((sector, index) => {
+    const top = [-28, -65, 12, -15, -21][index]
+    const targetHeight = sector.height
+    return { x: sector.x, y: centerY + top + targetHeight / 2,
+      width: sector.width, height: targetHeight }
+  })
+  return { centerX, centerY, ground, structure, bounds, reserved, targets,
+    chicken: { x: centerX - 58, y: centerY - 7 },
+    cow: { x: centerX - 9, y: centerY - 28 },
+    sheep: { x: centerX + 11, y: centerY + 39 },
+    pig: { x: centerX + 56, y: centerY + 18 },
+    peacock: { x: centerX - 4, y: centerY + 7 },
+    milk: { x: centerX - 30, y: centerY - 25 },
+    nest: { x: centerX - 75, y: centerY + 6 } }
 }
 
 export function animalOverviewZoom(bounds: WorldBounds, width: number, height: number, hud: number) {

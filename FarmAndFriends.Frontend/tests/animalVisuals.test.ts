@@ -9,6 +9,8 @@ import {
   resolveSheepMotion,
   resolvePigMotion,
   resolvePigFrame,
+  resolvePeacockMotion,
+  resolvePeacockFrame,
   animalProductCaption,
   animalActionCaption,
   resolveAnimalVisual,
@@ -70,6 +72,8 @@ test('runtime atlases contain every stage, nest and transparent enclosure frame'
     ['sheep-poses', ['full', 'shorn'].flatMap(coat => ['idle', 'walk-a', 'walk-b', 'graze'].map(pose => `${coat}-${pose}`))],
     ['lamb-poses', ['idle', 'walk-a', 'walk-b', 'graze'].map(pose => `lamb-${pose}`)],
     ['pig-cycle-poses', ['piglet', 'adult', 'adult-ready'].flatMap(stage => ['idle', 'walk-a', 'walk-b'].map(pose => `${stage}-${pose}`))],
+    ['peacock-adult-poses', ['producing', 'ready'].flatMap(state => ['idle', 'walk-a', 'walk-b', 'preen'].map(pose => `${state}-${pose}`))],
+    ['peachick-poses', ['idle', 'walk-a', 'walk-b', 'preen'].map(pose => `peachick-${pose}`)],
     ['milk-pails', ['milk-empty', 'milk-full']],
     ['chicken-nests', ['nest-empty', 'nest-eggs']],
     ['enclosure-wood-transparent', ['enclosure-wood-transparent']],
@@ -224,4 +228,92 @@ test('historical collection targets only the immediately replaced cycle of the s
   assert.equal(matchesAnimalFeedback(effect, 'farm', 'hen', 'new', 'older', 'collect'), false)
   assert.equal(matchesAnimalFeedback(effect, 'other', 'hen', 'new', 'old', 'collect'), false)
   assert.equal(matchesAnimalFeedback(effect, 'farm', 'other', 'new', 'old', 'collect'), false)
+})
+
+test('peacock fan and frames follow the accepted adult ready state without a feather prop', () => {
+  const producing = { animalTypeId: 'peacock', stage: 'adult' as const,
+    cycle: { id: 'feather-cycle', isReady: false, ownerCollectible: 6, helperCount: 1 } }
+  const ready = { ...producing, cycle: { ...producing.cycle, isReady: true } }
+  for (const pose of ['idle', 'walk-a', 'walk-b', 'preen'] as const) {
+    assert.equal(resolvePeacockFrame(producing, pose), `producing-${pose}`)
+    assert.equal(resolvePeacockFrame(ready, pose), `ready-${pose}`)
+    assert.equal(resolvePeacockFrame({ ...ready, stage: 'peachick' }, pose), `peachick-${pose}`)
+  }
+  assert.equal(resolveAnimalVisual(ready).fan, 'open')
+  assert.equal(resolveAnimalVisual({ ...ready, stage: 'peachick' }).fan, 'closed')
+  assert.equal(resolveAnimalVisual(ready).productFrame, null)
+  assert.equal(resolveAnimalVisual(ready).nest, null)
+  assert.equal(resolveAnimalVisual(ready).label, 'Penas prontas')
+  assert.equal(resolveAnimalVisual({ ...ready, cycle: { ...ready.cycle, ownerCollectible: 5 } }).fan, 'open')
+  assert.equal(resolveAnimalVisual({ ...producing, cycle: { ...producing.cycle, id: 'next' } }).fan, 'closed')
+  assert.equal(animalProductCaption('feather'), 'penas')
+  assert.equal(animalActionCaption('collect', 'feather', 6), '+6 penas 🧺')
+  assert.equal(animalActionCaption('steal', 'feather', 1), '+1 pena 😈')
+})
+
+test('peacock approved small foot cycle stays in place without flipping and respects reduced motion', () => {
+  for (let time = 0; time < 40_000; time += 100) {
+    const motion = resolvePeacockMotion(time, false)
+    assert.equal(motion.offset, 0)
+    assert.equal(motion.flipX, false)
+    assert.deepEqual(resolvePeacockMotion(time, true), { pose: 'idle', offset: 0, flipX: false })
+  }
+  assert.match(resolvePeacockMotion(7_000, false).pose, /^walk-/)
+  assert.equal(resolvePeacockMotion(11_000, false).pose, 'preen')
+  assert.deepEqual(resolvePeacockMotion(Number.NaN, false), { pose: 'idle', offset: 0, flipX: false })
+})
+
+test('peacock original A/B poses alternate every 520 ms for young, producing and ready animals', () => {
+  const first = resolvePeacockMotion(6_760, false)
+  const next = resolvePeacockMotion(7_280, false)
+  assert.equal(first.pose, 'walk-a')
+  assert.equal(resolvePeacockMotion(7_279, false).pose, 'walk-a')
+  assert.equal(next.pose, 'walk-b')
+  assert.equal(first.flipX, next.flipX)
+  const cycle = { id: 'gait-cycle', isReady: false, ownerCollectible: 6, helperCount: 0 }
+  for (const animal of [
+    { animalTypeId: 'peacock', stage: 'peachick' as const, cycle: null },
+    { animalTypeId: 'peacock', stage: 'adult' as const, cycle },
+    { animalTypeId: 'peacock', stage: 'adult' as const, cycle: { ...cycle, isReady: true } },
+  ]) {
+    assert.match(resolvePeacockFrame(animal, first.pose), /-walk-a$/)
+    assert.match(resolvePeacockFrame(animal, next.pose), /-walk-b$/)
+    assert.match(resolvePeacockFrame(animal, resolvePeacockMotion(7_360, true).pose), /-idle$/)
+  }
+})
+
+test('peacock runtime keeps the approved body-registered pivots', () => {
+  for (const [name, states] of [['peacock-adult-poses', ['producing', 'ready']], ['peachick-poses', ['peachick']]] as const) {
+    const atlas = JSON.parse(readFileSync(new URL(`../src/game/assets/animals/${name}.json`, import.meta.url), 'utf8'))
+    const approved = JSON.parse(readFileSync(new URL(`../../imgs/animal-enclosure/2026-10-02-peacock-v1/${name}.json`, import.meta.url), 'utf8'))
+    assert.deepEqual(atlas, approved)
+    for (const state of states) {
+      const idle = atlas.frames[`${state}-idle`]
+      for (const pose of ['walk-a', 'walk-b']) {
+        const frame = atlas.frames[`${state}-${pose}`]
+        assert.ok(frame.pivot.x > 0.4 && frame.pivot.x < 0.8)
+        assert.ok(Math.abs(frame.pivot.x * frame.sourceSize.w - idle.pivot.x * idle.sourceSize.w) < 50,
+          'pose anchor must compensate only the measured within-cell body offset')
+        assert.ok(Math.abs(frame.pivot.y * frame.sourceSize.h - idle.pivot.y * idle.sourceSize.h) < 15,
+          'vertical origin must register the torso rather than follow the extended toe')
+      }
+    }
+  }
+})
+
+test('peacock runtime loads the approved source sheets with matching PNG and atlas bounds', () => {
+  for (const name of ['peacock-adult-poses', 'peachick-poses']) {
+    const runtime = new URL(`../src/game/assets/animals/${name}.png`, import.meta.url)
+    const source = new URL(`../../imgs/animal-enclosure/2026-10-02-peacock-v1/${name}.png`, import.meta.url)
+    const png = readFileSync(runtime)
+    assert.equal(png.equals(readFileSync(source)), true, `${name} differs from the approved character art`)
+    const atlas = JSON.parse(readFileSync(new URL(`../src/game/assets/animals/${name}.json`, import.meta.url), 'utf8'))
+    assert.equal(png.readUInt32BE(16), atlas.meta.size.w)
+    assert.equal(png.readUInt32BE(20), atlas.meta.size.h)
+    assert.equal(png[25], 6, 'runtime PNG must contain RGBA transparency')
+    for (const frame of Object.values(atlas.frames) as { frame: { x: number; y: number; w: number; h: number } }[]) {
+      assert.ok(frame.frame.x + frame.frame.w <= atlas.meta.size.w)
+      assert.ok(frame.frame.y + frame.frame.h <= atlas.meta.size.h)
+    }
+  }
 })

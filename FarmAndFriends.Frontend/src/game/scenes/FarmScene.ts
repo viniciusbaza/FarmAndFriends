@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import type { FarmSceneReady } from '../../farm/farmSceneSync'
 import { gridToIso } from '../iso/isoUtils'
 import farmFontImage from '../assets/fonts/minogram_6x10.png'
 import farmFontData from '../assets/fonts/minogram_6x10.xml?url'
@@ -16,6 +17,7 @@ import {
 } from '../farmLayout'
 import {
   FARM_CAMERA_MODE_EVENT,
+  canMoveFarmCamera,
   getFarmCameraCenter,
   type FarmCameraMode,
   type FarmCameraModeDetail,
@@ -127,6 +129,7 @@ export default class FarmScene extends Phaser.Scene {
   private plotBounds = new Phaser.Geom.Rectangle()
   private plotVisualBounds = new Phaser.Geom.Rectangle()
   private cameraContentBounds = new Phaser.Geom.Rectangle()
+  private cameraLayoutReady = false
   private cameraMode: FarmCameraMode = 'focus'
   private overviewZoom = 1
   private focusZoom = 1
@@ -150,6 +153,7 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   init(data: { farm: Farm; isVisiting: boolean; modalSources?: string[] }) {
+    this.cameraLayoutReady = false
     this.farm = data.farm
     this.isVisiting = data.isVisiting
     this.modalBlockers = new Set(data.modalSources ?? [])
@@ -231,6 +235,7 @@ export default class FarmScene extends Phaser.Scene {
     this.syncLandOfferSign()
 
     this.layoutCamera(this.scale.gameSize.width, this.scale.gameSize.height)
+    this.cameraLayoutReady = true
     this.cameras.main.fadeIn(260)
     this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize)
     window.addEventListener(FARM_CAMERA_MODE_EVENT, this.onCameraModeChange)
@@ -246,6 +251,7 @@ export default class FarmScene extends Phaser.Scene {
     window.addEventListener('plot:plant:done', this.onPlantDone)
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.cameraLayoutReady = false
       window.removeEventListener('plot:plant:done', this.onPlantDone)
     })
 
@@ -306,6 +312,12 @@ export default class FarmScene extends Phaser.Scene {
       this.stopCameraMotion()
       this.game.canvas.style.cursor = 'default'
     })
+
+    // Purchases or refreshes may finish during preload/restart. React replays
+    // its latest accepted snapshot only after the scene can consume farm:sync.
+    window.dispatchEvent(new CustomEvent<FarmSceneReady>('farm:scene:ready', {
+      detail: { farmId: this.farm.id, isVisiting: this.isVisiting },
+    }))
   }
 
   private createBackdrop() {
@@ -573,6 +585,9 @@ export default class FarmScene extends Phaser.Scene {
     if (mode !== 'focus' && mode !== 'overview') return
 
     this.registry.set('farmCameraMode', mode)
+    // Restart is queued by Phaser. Persist the preference now; create() reads
+    // it once the new camera and bounds exist, without moving a dead camera.
+    if (!canMoveFarmCamera(this.sys.isActive(), this.cameraLayoutReady, this.cameras.main)) return
 
     // Sincronizações da fazenda podem reenviar o modo atual. Não recentraliza
     // nesses casos para preservar o deslocamento feito pelo jogador.

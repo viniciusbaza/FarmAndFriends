@@ -88,3 +88,15 @@ Alpha was inspected (888,454 fully transparent pixels). Each row shares a stable
 
 Prompt intent: one coherent sheet containing all three pig states, three equal cells per row, stable body/head position and scale within each row, consistent isometric camera, alternating near/far foreleg and hind-leg support, and the same happy ready face and leaf. The column-B correction specifically lifts and bends the near foreleg backward while the far foreleg is planted forward, with the opposite hind-leg support. No scenery, text or products outside the ready leaf.
 Final near-foreleg orientation refinement: ImageGen edited only the near foreleg in the third column for all three states. The shin and hoof point downward like the other legs, with the hoof front/split visible rather than the sole facing the viewer. The receded stride, faces, torso anchors and ready leaf remain. Dimensions stayed 1254×1254; existing atlas coordinates, scales and pivots remain valid.
+
+## Peacock original art and approved v6 cycle — 13 October 2026
+
+Runtime uses exact PNG/JSON copies from the single approved source folder, `imgs/animal-enclosure/2026-10-02-peacock-v1/`. The original PNGs are adult 1774×887 RGBA and young 2172×724 RGBA; the JSONs contain the approved body pivots. Adult rows remain `producing/ready`, each with `idle/walk-a/walk-b/preen`; the young sheet has the four `peachick` poses. No character, face, fan, colors or leg pixels were repainted for this integration.
+
+V6 JSON pivots register the body by comparing pixels above the legs, rather than following the extended toe. Source cell bounds and the fixed age scales remain unchanged: adult 36/375, young 26/505. A/B are small lifting/support variations in BOTH feet, not a near/far stride swap or a single moving leg with the other fixed. Original idle/preen poses remain available.
+
+The 20-second presentation cycle keeps its idle/preen windows. While A/B are active, each frame lasts 520 ms; offset is always 0 and flipX always false. Reduced motion selects idle. Readiness is exclusively the accepted `stage=adult && cycle.isReady` snapshot: ready opens the fan, partial theft keeps it, and a confirmed successor cycle closes it. There is no separate feather prop or production timer in Phaser.
+
+Adult PNG SHA256: `75d1296fcf025009274a503fc3dc400fa6edca2d081ebb4fd57aa17c5b6fafd9`. Young PNG SHA256: `9927a0dee265c3f5306b4a75330c1313a82c1c1b94ec3057ffc8e8d0651b9590`. Tests compare both runtime PNG/JSON pairs with the approved source files and confirm in-place motion, 520 ms cadence, reduced-motion idle and server-projected fan states.
+
+The approved motion keeps the original appearance. `animalLayout.ts` and the current user-adjusted positions/targets were preserved.

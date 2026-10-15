@@ -7,8 +7,17 @@ export function animalPresentation(animalTypeId: string) {
     case 'cow': return { icon: '🐄', youngIcon: '🐮', youngName: 'Bezerra', buyLabel: 'Comprar bezerra', arrival: 'Sua bezerra chegou' }
     case 'sheep': return { icon: '🐑', youngIcon: '🐑', youngName: 'Cordeira', buyLabel: 'Comprar cordeira', arrival: 'Sua cordeira chegou' }
     case 'pig': return { icon: '🐷', youngIcon: '🐽', youngName: 'Leitão', buyLabel: 'Comprar leitão', arrival: 'Seu leitão chegou' }
+    case 'peacock': return { icon: '🦚', youngIcon: '🦚', youngName: 'Filhote de pavão', buyLabel: 'Comprar filhote de pavão', arrival: 'Seu filhote de pavão chegou' }
     default: return { icon: '🐾', youngIcon: '🐾', youngName: 'Filhote', buyLabel: 'Comprar filhote', arrival: 'Seu filhote chegou' }
   }
+}
+
+export function animalAcquiredLabel(animalTypeId: string) {
+  return animalTypeId === 'pig' || animalTypeId === 'peacock' ? 'adquirido' : 'adquirida'
+}
+
+export function animalCareLabel(animalTypeId: string) {
+  return animalTypeId === 'pig' || animalTypeId === 'peacock' ? 'Cuidado' : 'Cuidada'
 }
 
 export function productPresentation(productId: string | null) {
@@ -17,6 +26,7 @@ export function productPresentation(productId: string | null) {
     case 'milk': return { icon: '🥛', name: 'Leite', actionName: 'leite' }
     case 'wool': return { icon: '🧶', name: 'Lã', actionName: 'lã' }
     case 'fertilizer': return { icon: '🌿', name: 'Adubo', actionName: 'adubo' }
+    case 'feather': return { icon: '🪶', name: 'Penas', actionName: 'penas' }
     default: return { icon: '🧺', name: 'Produto animal', actionName: 'produção' }
   }
 }
@@ -26,6 +36,7 @@ export function productQuantity(productId: string | null, quantity: number) {
   if (productId === 'milk') return `${quantity} ${quantity === 1 ? 'leite' : 'leites'}`
   if (productId === 'wool') return `${quantity} ${quantity === 1 ? 'lã' : 'lãs'}`
   if (productId === 'fertilizer') return `${quantity} ${quantity === 1 ? 'adubo' : 'adubos'}`
+  if (productId === 'feather') return `${quantity} ${quantity === 1 ? 'pena' : 'penas'}`
   return `${quantity} ${quantity === 1 ? 'produto animal' : 'produtos animais'}`
 }
 

@@ -14,7 +14,7 @@ export type AnimalStateEnvelope = {
 export type AnimalEnclosureDto = { id: string; slot: string; animals: AnimalDto[] }
 export type AnimalDto = {
   id: string; animalTypeId: string; displayName: string; purchasedAt: string; maturesAt: string
-  stage: 'chick' | 'calf' | 'lamb' | 'piglet' | 'adult'; cycle: AnimalCycleDto | null; permissions: AnimalPermissions
+  stage: 'chick' | 'calf' | 'lamb' | 'piglet' | 'peachick' | 'adult'; cycle: AnimalCycleDto | null; permissions: AnimalPermissions
   nextStateChangeAt: string | null
 }
 export type AnimalCycleDto = {

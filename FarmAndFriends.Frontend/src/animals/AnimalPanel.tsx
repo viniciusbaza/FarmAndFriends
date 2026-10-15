@@ -8,7 +8,7 @@ import { useAnimals } from './useAnimals'
 import { AnimalFeedback } from './AnimalFeedback'
 import { animalReason } from './animalMessages'
 import { getAnimalHelpers } from './animalApi'
-import { animalGrowthDeadline, animalPresentation, productPresentation, productQuantity } from './animalPresentation'
+import { animalCareLabel, animalGrowthDeadline, animalPresentation, productPresentation, productQuantity } from './animalPresentation'
 
 export function AnimalPanel({ maxHeight }: { maxHeight: number }) {
   const { farm, isVisiting } = useFarm()
@@ -109,7 +109,7 @@ function AnimalCard({ animal, farmId, isVisiting }: { animal: AnimalDto; farmId:
     <h3 className="text-sm">{growing ? presentation.youngIcon : presentation.icon} {growing ? `${presentation.youngName} · ${animal.displayName}` : animal.displayName}</h3>
     {cycle && cycle.helperCount > 0 && <p className="text-xs font-semibold text-sky-700">
       💛 {!isVisiting && visibleHelpers.length > 0
-        ? `Cuidada por ${visibleHelpers.map(helper => helper.displayNameAtHelp).join(', ')}${cycle.helperCount > visibleHelpers.length ? ` e +${cycle.helperCount - visibleHelpers.length}` : ''}`
+        ? `${animalCareLabel(animal.animalTypeId)} por ${visibleHelpers.map(helper => helper.displayNameAtHelp).join(', ')}${cycle.helperCount > visibleHelpers.length ? ` e +${cycle.helperCount - visibleHelpers.length}` : ''}`
         : cycle.viewerHelped ? 'Você cuidou neste ciclo' : `${cycle.helperCount} cuidado(s) neste ciclo`}
     </p>}
     <p className="text-xs font-semibold text-emerald-700">{growing ? 'Crescendo' : cycle?.isReady ? 'Pronto' : 'Produzindo'}</p>

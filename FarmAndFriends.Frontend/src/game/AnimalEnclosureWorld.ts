@@ -15,6 +15,10 @@ import {
   PIG_ATLAS,
   PIG_METRICS,
   pigFootOrigin,
+  PEACOCK_ATLAS,
+  PEACHICK_ATLAS,
+  PEACOCK_METRICS,
+  peacockFootOrigin,
   MILK_ATLAS,
   MILK_METRICS,
   DEFAULT_ENCLOSURE_STYLE,
@@ -28,6 +32,8 @@ import {
   resolveSheepMotion,
   resolvePigMotion,
   resolvePigFrame,
+  resolvePeacockMotion,
+  resolvePeacockFrame,
   resolveChickenMotion,
   resolveAnimalSemanticScale,
   resolveAnimalVisual,
@@ -88,7 +94,8 @@ export class AnimalEnclosureWorld {
     for (const animal of state.enclosure.animals) {
       // Future catalog entries need their own approved art, never extra hens.
       if (animal.animalTypeId !== 'chicken' && animal.animalTypeId !== 'cow' &&
-        animal.animalTypeId !== 'sheep' && animal.animalTypeId !== 'pig') continue
+        animal.animalTypeId !== 'sheep' && animal.animalTypeId !== 'pig' &&
+        animal.animalTypeId !== 'peacock') continue
       let visual = this.animals.get(animal.id)
       if (!visual) {
         visual = this.createAnimal(animal)
@@ -122,23 +129,23 @@ export class AnimalEnclosureWorld {
     const cow = animal.animalTypeId === 'cow'
     const sheep = animal.animalTypeId === 'sheep'
     const pig = animal.animalTypeId === 'pig'
-    const position = pig ? this.layout.pig : sheep ? this.layout.sheep : cow ? this.layout.cow : this.layout.chicken
-    const shadow = this.scene.add.ellipse(position.x, position.y, pig ? 28 : sheep ? 25 : cow ? 27 : 17, 6, 0x4a462a, 0.22).setDepth(300)
+    const peacock = animal.animalTypeId === 'peacock'
+    const position = peacock ? this.layout.peacock : pig ? this.layout.pig : sheep ? this.layout.sheep : cow ? this.layout.cow : this.layout.chicken
+    const shadow = this.scene.add.ellipse(position.x, position.y, peacock ? 27 : pig ? 28 : sheep ? 25 : cow ? 27 : 17, 6, 0x4a462a, 0.22).setDepth(300)
     const presentation = resolveAnimalVisual(animal)
-    const texture = pig ? PIG_ATLAS : sheep ? animal.stage === 'lamb' ? LAMB_ATLAS : SHEEP_ATLAS : cow ? COW_ATLAS : CHICKEN_ATLAS
-    const firstFrame = pig ? resolvePigFrame(animal, 'idle')
+    const texture = peacock ? animal.stage === 'peachick' ? PEACHICK_ATLAS : PEACOCK_ATLAS
+      : pig ? PIG_ATLAS : sheep ? animal.stage === 'lamb' ? LAMB_ATLAS : SHEEP_ATLAS : cow ? COW_ATLAS : CHICKEN_ATLAS
+    const firstFrame = peacock ? resolvePeacockFrame(animal, 'idle') : pig ? resolvePigFrame(animal, 'idle')
       : sheep ? animal.stage === 'lamb' ? 'lamb-idle' : `${presentation.coat}-idle` : `${animal.stage}-idle`
     const sprite = this.scene.add.image(position.x, position.y, texture, firstFrame).setDepth(330)
     const productPosition = cow ? this.layout.milk : this.layout.nest
-    const product = sheep || pig ? undefined : this.scene.add.image(productPosition.x, productPosition.y,
+    const product = sheep || pig || peacock ? undefined : this.scene.add.image(productPosition.x, productPosition.y,
       cow ? MILK_ATLAS : CHICKEN_NESTS_ATLAS, presentation.productFrame!)
       .setOrigin(cow ? MILK_METRICS.originX : 0.5, cow ? MILK_METRICS.originY : 0.85).setDepth(350)
     // Separate species targets include their product without overlapping each other.
-    const sector = this.layout.reserved[pig ? 3 : sheep ? 2 : cow ? 1 : 0]
-    // The sheep target extends from its hooves to the head while staying clear
-    // of the cow and the fourth reserved sector.
-    const target = this.scene.add.zone(sector.x, sector.y - (pig ? 12 : sheep ? 15 : cow ? 12 : 0),
-      sector.width, pig ? 38 : sheep ? 42 : cow ? 44 : 34).setDepth(460).setInteractive()
+    const sector = this.layout.targets[peacock ? 4 : pig ? 3 : sheep ? 2 : cow ? 1 : 0]
+    const target = this.scene.add.zone(sector.x, sector.y,
+      sector.width, sector.height).setDepth(460).setInteractive()
     target.on('pointerup', () => {
       if (!this.inputAllowed()) return
       const screenPosition = this.resolveScreenPosition(target.x, target.y)
@@ -182,27 +189,32 @@ export class AnimalEnclosureWorld {
       const cow = visual.animal.animalTypeId === 'cow'
       const sheep = visual.animal.animalTypeId === 'sheep'
       const pig = visual.animal.animalTypeId === 'pig'
+      const peacock = visual.animal.animalTypeId === 'peacock'
+      const peachick = peacock && stage === 'peachick'
       const lamb = sheep && stage === 'lamb'
-      const metrics = pig ? PIG_METRICS[stage === 'piglet' ? 'piglet' : 'adult']
+      const metrics = peacock ? PEACOCK_METRICS[peachick ? 'peachick' : 'adult']
+        : pig ? PIG_METRICS[stage === 'piglet' ? 'piglet' : 'adult']
         : sheep ? SHEEP_METRICS[lamb ? 'lamb' : 'adult']
         : cow ? COW_METRICS[stage === 'adult' ? 'adult' : 'calf']
           : CHICKEN_METRICS[stage === 'adult' ? 'adult' : 'chick']
-      const position = pig ? this.layout.pig : sheep ? this.layout.sheep : cow ? this.layout.cow : this.layout.chicken
+      const position = peacock ? this.layout.peacock : pig ? this.layout.pig : sheep ? this.layout.sheep : cow ? this.layout.cow : this.layout.chicken
       const pigMotion = pig ? resolvePigMotion(time, this.reduceMotion) : null
-      const motion = pigMotion ?? (sheep ? resolveSheepMotion(time, this.reduceMotion)
+      const peacockMotion = peacock ? resolvePeacockMotion(time, this.reduceMotion) : null
+      const motion = peacockMotion ?? pigMotion ?? (sheep ? resolveSheepMotion(time, this.reduceMotion)
         : cow ? resolveCowMotion(time, this.reduceMotion) : resolveChickenMotion(time, this.reduceMotion))
-      const frame = pigMotion ? resolvePigFrame(visual.animal, pigMotion.pose)
+      const frame = peacockMotion ? resolvePeacockFrame(visual.animal, peacockMotion.pose)
+        : pigMotion ? resolvePigFrame(visual.animal, pigMotion.pose)
         : sheep ? `${lamb ? 'lamb' : resolveAnimalVisual(visual.animal).coat}-${motion.pose}`
         : `${stage}-${motion.pose}`
-      const texture = pig ? PIG_ATLAS
+      const texture = peacock ? peachick ? PEACHICK_ATLAS : PEACOCK_ATLAS : pig ? PIG_ATLAS
         : sheep ? lamb ? LAMB_ATLAS : SHEEP_ATLAS : cow ? COW_ATLAS : CHICKEN_ATLAS
       if (visual.sprite.texture.key !== texture) {
         visual.sprite.setTexture(texture, frame)
         visual.frame = ''
       }
       if (visual.frame !== frame) {
-        if (pig) {
-          const origin = pigFootOrigin(frame)
+        if (pig || peacock) {
+          const origin = peacock ? peacockFootOrigin(frame, peachick) : pigFootOrigin(frame)
           visual.sprite.setFrame(frame).setOrigin(origin.x, origin.y)
         } else {
           visual.sprite.setFrame(frame).setOrigin(0.5,
@@ -210,6 +222,12 @@ export class AnimalEnclosureWorld {
               : CHICKEN_METRICS[stage === 'adult' ? 'adult' : 'chick'].originY)
         }
         visual.frame = frame
+      }
+      // Phaser mirrors around the image center. Mirror an asymmetric pivot too,
+      // otherwise turning would slide the supporting foot away from its anchor.
+      if (peacock) {
+        const origin = peacockFootOrigin(frame, peachick)
+        visual.sprite.setOrigin(motion.flipX ? 1 - origin.x : origin.x, origin.y)
       }
       visual.sprite
         .setPosition(
@@ -220,15 +238,15 @@ export class AnimalEnclosureWorld {
         .setScale(metrics.scale * semanticScale)
         .setFlipX(motion.flipX)
 
-        const shadowOffsetX = 0
-        const shadowOffsetY = pig || sheep || cow ? -3 : 0
+      const shadowOffsetX = 0
+      const shadowOffsetY = peacock || pig || sheep || cow ? -3 : 0
       visual.shadow.setPosition(
         visual.sprite.x + shadowOffsetX,
         visual.sprite.y + shadowOffsetY
       )
-      .setDisplaySize((pig ? 28 : sheep ? 25 : cow ? 27 : 17) * semanticScale, 6 * semanticScale)
+      .setDisplaySize((peacock ? 27 : pig ? 28 : sheep ? 25 : cow ? 27 : 17) * semanticScale, 6 * semanticScale)
       if (cow) visual.product?.setScale(MILK_METRICS.scale * semanticScale)
-      else if (!sheep && !pig) visual.product?.setDisplaySize(28 * semanticScale, 19 * semanticScale)
+      else if (!sheep && !pig && !peacock) visual.product?.setDisplaySize(28 * semanticScale, 19 * semanticScale)
     }
   }
 

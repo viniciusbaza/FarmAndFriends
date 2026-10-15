@@ -1,22 +1,24 @@
 import { productPresentation } from '../animals/animalPresentation.ts'
 
 type CycleVisualState = { id: string; isReady: boolean; ownerCollectible: number; helperCount: number }
-type AnimalVisualState = { animalTypeId?: string; stage: 'chick' | 'calf' | 'lamb' | 'piglet' | 'adult'; cycle: CycleVisualState | null }
+type AnimalVisualState = { animalTypeId?: string; stage: 'chick' | 'calf' | 'lamb' | 'piglet' | 'peachick' | 'adult'; cycle: CycleVisualState | null }
 
 /** No local readiness calculation: only the accepted server projection. */
 export function resolveAnimalVisual(animal: AnimalVisualState) {
   const sheep = animal.animalTypeId === 'sheep'
   const pig = animal.animalTypeId === 'pig'
+  const peacock = animal.animalTypeId === 'peacock'
   return {
     age: animal.stage,
-    nest: sheep || pig ? null : animal.cycle?.isReady ? 'nest-eggs' : 'nest-empty',
+    nest: sheep || pig || peacock ? null : animal.cycle?.isReady ? 'nest-eggs' : 'nest-empty',
     coat: sheep && animal.stage === 'adult' && animal.cycle?.isReady ? 'full' : 'shorn',
-    productFrame: sheep || pig ? null : animal.animalTypeId === 'cow'
+    productFrame: sheep || pig || peacock ? null : animal.animalTypeId === 'cow'
       ? animal.cycle?.isReady ? 'milk-full' : 'milk-empty'
       : animal.cycle?.isReady ? 'nest-eggs' : 'nest-empty',
     readyIndicator: pig && animal.stage === 'adult' && animal.cycle?.isReady === true,
+    fan: peacock && animal.stage === 'adult' && animal.cycle?.isReady === true ? 'open' : 'closed',
     label: animal.stage !== 'adult' ? 'Crescendo' : animal.cycle?.isReady
-      ? pig ? 'Adubo pronto' : sheep ? 'Lã pronta' : animal.animalTypeId === 'cow' ? 'Leite pronto' : 'Ovos prontos' : 'Produzindo',
+      ? peacock ? 'Penas prontas' : pig ? 'Adubo pronto' : sheep ? 'Lã pronta' : animal.animalTypeId === 'cow' ? 'Leite pronto' : 'Ovos prontos' : 'Produzindo',
     helpers: animal.cycle?.helperCount ?? 0,
   }
 }
@@ -65,9 +67,26 @@ export function resolvePigFrame(animal: AnimalVisualState, pose: PigMotion['pose
   return `${resolveAnimalVisual(animal).readyIndicator ? 'adult-ready' : 'adult'}-${pose}`
 }
 
+export type PeacockMotion = { pose: 'idle' | 'walk-a' | 'walk-b' | 'preen'; offset: number; flipX: boolean }
+
+/** Approved subtle foot cycle in place; timestamps never determine production. */
+export function resolvePeacockMotion(time: number, reduceMotion: boolean): PeacockMotion {
+  if (reduceMotion || !Number.isFinite(time)) return { pose: 'idle', offset: 0, flipX: false }
+  const phase = (((time % 20_000) + 20_000) % 20_000) / 1_000
+  if (phase < 6 || phase >= 13) return { pose: 'idle', offset: 0, flipX: false }
+  if (phase >= 10) return { pose: 'preen', offset: 0, flipX: false }
+  return { pose: Math.floor(time / 520) % 2 ? 'walk-a' : 'walk-b',
+    offset: 0, flipX: false }
+}
+
+export function resolvePeacockFrame(animal: AnimalVisualState, pose: PeacockMotion['pose']) {
+  if (animal.stage === 'peachick') return `peachick-${pose}`
+  return `${resolveAnimalVisual(animal).fan === 'open' ? 'ready' : 'producing'}-${pose}`
+}
+
 export function animalProductCaption(productId: string | null, amount?: number) {
   if (amount === undefined) {
-    return productId === 'egg' || productId === 'milk' || productId === 'wool' || productId === 'fertilizer'
+    return productId === 'egg' || productId === 'milk' || productId === 'wool' || productId === 'fertilizer' || productId === 'feather'
       ? productPresentation(productId).actionName
       : 'produtos'
   }
@@ -75,6 +94,7 @@ export function animalProductCaption(productId: string | null, amount?: number) 
   if (productId === 'fertilizer') return amount === 1 ? 'adubo' : 'adubos'
   if (productId === 'milk') return amount === 1 ? 'leite' : 'leites'
   if (productId === 'wool') return amount === 1 ? 'lã' : 'lãs'
+  if (productId === 'feather') return amount === 1 ? 'pena' : 'penas'
   return amount === 1 ? 'produto' : 'produtos'
 }
 

@@ -58,6 +58,20 @@ public sealed class AnimalRulesTests
         Assert.False(new AnimalEnclosureOptions { SheepOwnerReserveFraction = 0 }.IsValid());
         Assert.False(new AnimalEnclosureOptions { SheepTheftPerVisitor = 0 }.IsValid());
         Assert.False(new AnimalEnclosureOptions { WoolSellPriceCoins = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockPriceCoins = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockMinLevel = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockGrowthSeconds = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockProductionSeconds = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockBaseYield = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockOwnerReserveAbsolute = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockOwnerReserveFraction = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockOwnerReserveFraction = 1.01m }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockTheftAggregateLimit = -1 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockTheftPerVisitor = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockHelpBonusLimit = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockHelpIncrement = 0 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { PeacockCollectXp = -1 }.IsValid());
+        Assert.False(new AnimalEnclosureOptions { FeatherSellPriceCoins = 0 }.IsValid());
     }
 
     [Fact]
@@ -101,5 +115,51 @@ public sealed class AnimalRulesTests
         Assert.Equal(4, AnimalRules.OwnerReserve(adjusted));
         Assert.Equal(0.50m, adjusted.OwnerReserveFraction);
         Assert.Equal(50, adjusted.CollectXp);
+    }
+
+    [Fact]
+    public void PeacockPolicy_UsesIndependentSnapshotAndSheepModelWithLongerProduction()
+    {
+        var settings = new AnimalEnclosureOptions();
+        var species = AnimalSpeciesRules.Find("peacock")!;
+        Assert.Equal("Pavão", species.DisplayName);
+        Assert.Equal("peachick", species.YoungStage);
+        Assert.Equal("feather", species.ProductId);
+        Assert.Equal(species, AnimalSpeciesRules.FindProduct("feather"));
+        Assert.Equal(2500, AnimalSpeciesRules.Price(species, settings));
+        Assert.Equal(8, AnimalSpeciesRules.MinLevel(species, settings));
+        Assert.Equal(150, AnimalSpeciesRules.SellPrice(species, settings));
+        var peacock = settings.ForSpecies("peacock");
+        Assert.True(peacock.IsValid());
+        Assert.Equal(28800, peacock.GrowthSeconds);
+        Assert.Equal(259200, peacock.ProductionSeconds);
+        Assert.Equal(6, peacock.BaseYield);
+        Assert.Equal(4, AnimalRules.OwnerReserve(peacock));
+        Assert.Equal(2, AnimalRules.TheftLimit(peacock));
+        Assert.Equal(1, peacock.TheftPerVisitor);
+        Assert.Equal(1, peacock.HelpIncrement);
+        Assert.Equal(3, peacock.HelpBonusLimit);
+        Assert.Equal(2, peacock.HelpCoins);
+        Assert.Equal(5, peacock.HelpXp);
+        Assert.Equal(40, peacock.CollectXp);
+
+        settings.PeacockBaseYield = 10;
+        settings.PeacockOwnerReserveAbsolute = 2;
+        settings.PeacockOwnerReserveFraction = .6m;
+        settings.PeacockTheftAggregateLimit = 4;
+        settings.PeacockTheftPerVisitor = 2;
+        settings.PeacockHelpIncrement = 2;
+        settings.PeacockHelpBonusLimit = 5;
+        settings.PeacockCollectXp = 50;
+        var changed = settings.ForSpecies("peacock");
+        Assert.Equal(6, AnimalRules.OwnerReserve(changed));
+        Assert.Equal(4, AnimalRules.TheftLimit(changed));
+        Assert.Equal(2, changed.TheftPerVisitor);
+        Assert.Equal(2, changed.HelpIncrement);
+        Assert.Equal(5, changed.HelpBonusLimit);
+        Assert.Equal(50, changed.CollectXp);
+        Assert.Equal(6, peacock.BaseYield); // Earlier in-memory snapshots remain independent.
+        Assert.Equal(172800, settings.ForSpecies("sheep").ProductionSeconds);
+        Assert.Equal(43200, settings.ForSpecies("chicken").ProductionSeconds);
     }
 }

@@ -89,4 +89,38 @@ test('HTTP session, command confirmations and exact recovery transport', async t
     assert.deepEqual(calls.map(call => call.key), [buyKey, sellKey])
     fetchMock.mock.restore()
   })
+
+  await t.test('peacock purchase and feather sale reuse the species and product contracts', async () => {
+    const calls: { url: string; body: object }[] = []
+    const fetchMock = t.mock.method(globalThis, 'fetch', async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), body: JSON.parse(init?.body as string) })
+      return Response.json({ operationId: 'op', replayed: false, current: null })
+    })
+    await sendAnimalAttempt({ action: 'buy-animal', farmId: 'farm', animalTypeId: 'peacock', key: '44444444-4444-4444-8444-444444444444' })
+    await sendAnimalAttempt({ action: 'sell-animal-product', farmId: 'farm', itemId: 'feather', quantity: 6, key: '55555555-5555-4555-8555-555555555555' })
+    assert.ok(calls[0].url.endsWith('/shop/buy-animal'))
+    assert.deepEqual(calls[0].body, { animalTypeId: 'peacock' })
+    assert.ok(calls[1].url.endsWith('/shop/sell-animal-product'))
+    assert.deepEqual(calls[1].body, { itemId: 'feather', quantity: 6 })
+    fetchMock.mock.restore()
+  })
+
+  await t.test('five individual animal help commands reach the server without a client farm quota', async () => {
+    const calls: { url: string; body: object; key: string | undefined }[] = []
+    const fetchMock = t.mock.method(globalThis, 'fetch', async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), body: JSON.parse(init?.body as string),
+        key: (init?.headers as Record<string, string>)?.['Idempotency-Key'] })
+      return Response.json({ operationId: `op-${calls.length}`, replayed: false, current: null })
+    })
+    const species = ['chicken', 'cow', 'sheep', 'pig', 'peacock']
+    for (const [index, id] of species.entries()) {
+      await sendAnimalAttempt({ action: 'help', farmId: 'friend-farm', animalId: id,
+        expectedCycleId: `${id}-cycle`, key: `66666666-6666-4666-8666-66666666666${index}` })
+    }
+    assert.equal(calls.length, 5)
+    assert.deepEqual(calls.map(call => call.url.split('/farms/')[1]), species.map(id => `friend-farm/animals/${id}/help`))
+    assert.deepEqual(calls.map(call => call.body), species.map(id => ({ expectedCycleId: `${id}-cycle` })))
+    assert.equal(new Set(calls.map(call => call.key)).size, 5)
+    fetchMock.mock.restore()
+  })
 })

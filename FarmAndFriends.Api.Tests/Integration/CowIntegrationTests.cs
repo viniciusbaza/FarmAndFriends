@@ -33,10 +33,10 @@ public sealed class CowIntegrationTests
         await using (var db = s.Db())
         {
             var offers = await s.Service(db).GetAnimalOffersAsync(s.Owner);
-            Assert.Equal(new[] { "chicken", "cow", "sheep", "pig" }, offers.Select(o => o.AnimalTypeId));
+            Assert.Equal(new[] { "chicken", "cow", "sheep", "pig", "peacock" }, offers.Select(o => o.AnimalTypeId));
             Assert.All(offers, o => Assert.Equal("ENCLOSURE_REQUIRED", o.Reason));
             var products = s.Service(db).GetProductOffers();
-            Assert.Equal(new[] { "egg", "milk", "wool" }, products.Select(p => p.ItemId));
+            Assert.Equal(new[] { "egg", "milk", "wool", "feather" }, products.Select(p => p.ItemId));
             Assert.Equal(40, products.Single(p => p.ItemId == "milk").SellPriceCoins);
         }
         await s.Command(s.Owner, "buy-animal-enclosure");

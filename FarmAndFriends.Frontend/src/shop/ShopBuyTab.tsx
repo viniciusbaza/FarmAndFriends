@@ -143,7 +143,7 @@ export function ShopBuyTab({
               : 'text-emerald-700 hover:bg-white/60'
           }`}
         >
-          Outros
+          Produtos
         </button>
         <button
           type="button"
@@ -155,7 +155,7 @@ export function ShopBuyTab({
               : 'text-emerald-700 hover:bg-white/60'
           }`}
         >
-          Cercado e animais
+          Animais
         </button>
       </nav>
 

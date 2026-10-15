@@ -67,3 +67,35 @@ test('delayed command from A preserves active B GET and can update only the own-
   assert.equal(patchAnimalFarm(farmA, confirmedA)?.animalState?.revision, 3)
   assert.equal(patchAnimalFarm(null, confirmedA), null)
 })
+
+test('confirmed help snapshot preserves four remaining independent animal opportunities', () => {
+  const species = [['chicken', 'egg'], ['cow', 'milk'], ['sheep', 'wool'], ['pig', 'fertilizer'], ['peacock', 'feather']]
+  const state: AnimalStateEnvelope = {
+    ...envelope(1, '2026-10-04T12:00:00Z'), enclosure: {
+      id: 'enclosure', slot: 'animal-enclosure', animals: species.map(([id, productId]) => ({
+        id, animalTypeId: id, displayName: id, purchasedAt: '2026-10-01T00:00:00Z',
+        maturesAt: '2026-10-01T08:00:00Z', stage: 'adult', nextStateChangeAt: null,
+        cycle: { id: `${id}-cycle`, productId,
+          startsAt: '2026-10-04T00:00:00Z', readyAt: '2026-10-07T00:00:00Z', isReady: false,
+          baseYield: 0, protectedHelpBonus: 0, remainingBase: 6, ownerCollectible: 0,
+          helperCount: 0, viewerHelped: false, helpers: null, helpersNextCursor: null },
+        permissions: { canCollect: false, canHelp: true, canSteal: false, collectReason: 'NOT_OWNER',
+          helpReason: null, stealReason: 'NOT_READY', rewardAvailable: true,
+          coinsReward: 2, xpReward: 5, nextRewardAt: null },
+      })),
+    },
+  }
+  const farm: Farm = { id: 'farm-a', name: 'Amigo', ownerUserId: 'owner', ownerUsername: 'Amigo',
+    nextPestCheckAt: null, landOffer: null, plots: [], animalState: state }
+  const confirmed: AnimalStateEnvelope = { ...state, revision: 2, enclosure: { ...state.enclosure!,
+    animals: state.enclosure!.animals.map(animal => animal.id === 'chicken' ? { ...animal,
+      cycle: { ...animal.cycle!, helperCount: 1, viewerHelped: true },
+      permissions: { ...animal.permissions, canHelp: false, helpReason: 'HELP_ALREADY_REGISTERED' },
+    } : animal),
+  } }
+  const patched = patchAnimalFarm(farm, confirmed)!
+  assert.deepEqual(patched.animalState?.enclosure?.animals.filter(animal => animal.permissions.canHelp)
+    .map(animal => animal.id), ['cow', 'sheep', 'pig', 'peacock'])
+  assert.equal(patched.animalState?.enclosure?.animals[0].cycle?.viewerHelped, true)
+  assert.equal(state.enclosure?.animals[0].permissions.canHelp, true)
+})

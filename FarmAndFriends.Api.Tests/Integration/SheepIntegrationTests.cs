@@ -32,7 +32,7 @@ public sealed class SheepIntegrationTests
         await using (var db = s.Db())
         {
             var offers = await s.Service(db).GetAnimalOffersAsync(s.Owner);
-            Assert.Equal(new[] { "chicken", "cow", "sheep", "pig" }, offers.Select(o => o.AnimalTypeId));
+            Assert.Equal(new[] { "chicken", "cow", "sheep", "pig", "peacock" }, offers.Select(o => o.AnimalTypeId));
             var sheep = offers.Single(o => o.AnimalTypeId == "sheep");
             Assert.Equal(1500, sheep.PriceCoins);
             Assert.Equal(6, sheep.MinLevel);

@@ -31,6 +31,19 @@ public sealed class AnimalEnclosureOptions
     public int SheepHelpBonusLimit { get; set; } = 3;
     public int SheepHelpIncrement { get; set; } = 1;
     public int SheepCollectXp { get; set; } = 40;
+    public int PeacockPriceCoins { get; set; } = 2500;
+    public int PeacockMinLevel { get; set; } = 8;
+    public int PeacockGrowthSeconds { get; set; } = 28800;
+    public int PeacockProductionSeconds { get; set; } = 259200;
+    public int PeacockBaseYield { get; set; } = 6;
+    public int FeatherSellPriceCoins { get; set; } = 150;
+    public int PeacockOwnerReserveAbsolute { get; set; } = 4;
+    public decimal PeacockOwnerReserveFraction { get; set; } = 0.50m;
+    public int PeacockTheftAggregateLimit { get; set; } = 2;
+    public int PeacockTheftPerVisitor { get; set; } = 1;
+    public int PeacockHelpBonusLimit { get; set; } = 3;
+    public int PeacockHelpIncrement { get; set; } = 1;
+    public int PeacockCollectXp { get; set; } = 40;
     public int PigPriceCoins { get; set; } = 2000;
     public int PigMinLevel { get; set; } = 7;
     public int PigGrowthSeconds { get; set; } = 28800;
@@ -61,6 +74,12 @@ public sealed class AnimalEnclosureOptions
         && SheepOwnerReserveFraction is > 0 and <= 1
         && SheepTheftAggregateLimit >= 0 && SheepTheftPerVisitor > 0
         && SheepHelpBonusLimit is > 0 and <= 1000000 && SheepHelpIncrement > 0 && SheepCollectXp >= 0
+        && PeacockPriceCoins > 0 && PeacockMinLevel > 0 && FeatherSellPriceCoins > 0
+        && PeacockGrowthSeconds is > 0 and <= 31536000 && PeacockProductionSeconds is > 0 and <= 31536000
+        && PeacockBaseYield is > 0 and <= 1000000 && PeacockOwnerReserveAbsolute > 0
+        && PeacockOwnerReserveFraction is > 0 and <= 1
+        && PeacockTheftAggregateLimit >= 0 && PeacockTheftPerVisitor > 0
+        && PeacockHelpBonusLimit is > 0 and <= 1000000 && PeacockHelpIncrement > 0 && PeacockCollectXp >= 0
         && PigPriceCoins > 0 && PigMinLevel > 0
         && PigGrowthSeconds is > 0 and <= 31536000 && PigProductionSeconds is > 0 and <= 31536000
         && PigBaseYield is > 0 and <= 1000000 && PigHelpBonusLimit is > 0 and <= 1000000
@@ -95,6 +114,19 @@ public sealed class AnimalEnclosureOptions
             snapshot.HelpBonusLimit = SheepHelpBonusLimit;
             snapshot.HelpIncrement = SheepHelpIncrement;
             snapshot.CollectXp = SheepCollectXp;
+        }
+        else if (animalTypeId == "peacock")
+        {
+            snapshot.GrowthSeconds = PeacockGrowthSeconds;
+            snapshot.ProductionSeconds = PeacockProductionSeconds;
+            snapshot.BaseYield = PeacockBaseYield;
+            snapshot.OwnerReserveAbsolute = PeacockOwnerReserveAbsolute;
+            snapshot.OwnerReserveFraction = PeacockOwnerReserveFraction;
+            snapshot.TheftAggregateLimit = PeacockTheftAggregateLimit;
+            snapshot.TheftPerVisitor = PeacockTheftPerVisitor;
+            snapshot.HelpBonusLimit = PeacockHelpBonusLimit;
+            snapshot.HelpIncrement = PeacockHelpIncrement;
+            snapshot.CollectXp = PeacockCollectXp;
         }
         else if (animalTypeId == "pig")
         {

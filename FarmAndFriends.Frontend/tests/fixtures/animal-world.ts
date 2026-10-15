@@ -10,8 +10,10 @@ let stage = 'ready'
 let cowStage = 'ready'
 let sheepStage = 'ready'
 let pigStage = 'ready'
+let peacockStage = 'ready'
+let peacockAnimation = 'live'
 let pigAnimation = 'live'
-let selectedSpecies = 'pig'
+let selectedSpecies = 'peacock'
 let visiting = false
 const nativeMatchMedia = window.matchMedia.bind(window)
 let reducedMotion = nativeMatchMedia('(prefers-reduced-motion: reduce)').matches
@@ -26,6 +28,7 @@ let cycleId = 'cycle-1'
 let cowCycleId = 'cow-cycle-1'
 let sheepCycleId = 'sheep-cycle-1'
 let pigCycleId = 'pig-cycle-1'
+let peacockCycleId = 'peacock-cycle-1'
 let overview = true
 let volumes: Phaser.GameObjects.GameObject[] = []
 const permissions = { canCollect: true, canHelp: true, canSteal: true, collectReason: null,
@@ -60,13 +63,20 @@ function snapshot(): Farm {
       baseYield: 4, protectedHelpBonus: 1, remainingBase: 4, ownerCollectible: 4,
       helperCount: 0, viewerHelped: false, helpers: [], helpersNextCursor: null,
       isReady: pigStage === 'ready' } }
+  const peacock: AnimalDto = { ...animal, id: 'peacock', animalTypeId: 'peacock', displayName: 'Pavão',
+    stage: peacockStage === 'peachick' ? 'peachick' : 'adult',
+    cycle: peacockStage === 'peachick' ? null : { ...animal.cycle!, id: peacockCycleId, productId: 'feather',
+      startsAt: '2026-09-01T01:00:00Z', readyAt: '2026-09-04T01:00:00Z',
+      baseYield: 6, protectedHelpBonus: 1, remainingBase: 6, ownerCollectible: 7,
+      helperCount: 1, viewerHelped: false, helpers: [], helpersNextCursor: null,
+      isReady: peacockStage === 'ready' } }
   return { id: 'fixture-farm', name: 'Prova visual', ownerUserId: 'fixture', ownerUsername: 'Fazendeiro',
     nextPestCheckAt: null, landOffer: allUnlocked ? null : { plotId: 'plot-3-0', plotNumber: 10, maxPlots: 28,
       minLevel: 1, prices: { coins: 100, premiumCoins: 1 }, expandsTo: null },
     animalState: { farmId: 'fixture-farm', revision, observedAt: new Date().toISOString(),
       enclosure: stage === 'none' ? null : { id: 'enclosure', slot: 'upper-right',
         animals: stage === 'empty' ? [] : [animal, ...(cowStage === 'none' ? [] : [cow]),
-          ...(sheepStage === 'none' ? [] : [sheep]), ...(pigStage === 'none' ? [] : [pig])] } },
+          ...(sheepStage === 'none' ? [] : [sheep]), ...(pigStage === 'none' ? [] : [pig]), ...(peacockStage === 'none' ? [] : [peacock])] } },
     plots: Array.from({ length: 28 }, (_, i) => {
       const x = i % 7; const y = Math.floor(i / 7); const unlocked = allUnlocked || x < 3 && y < 3
       return { id: `plot-${x}-${y}`, x, y, unlocked, seedId: unlocked ? (x === 0 ? 'apple_tree' : 'carrot') : null,
@@ -87,15 +97,20 @@ document.getElementById('motion')!.textContent = reducedMotion ? 'Movimento redu
 // Public Phaser loop control is restricted to this QA fixture. Zero delta
 // freezes timers/tweens; game.step also renders the selected animation frame.
 // A/B have the same patrol offset and orientation despite opposite stride parity.
-function renderSelectedPigFrame() {
-  if (pigAnimation === 'live') return
+function renderSelectedFrame() {
+  if (pigAnimation === 'live' && peacockAnimation === 'live') return
   game.loop.sleep()
-  game.step(pigAnimation === 'idle' ? 0 : pigAnimation === 'walk-a' ? 24_000 : 6_000, 0)
+  const time = peacockAnimation !== 'live'
+    ? peacockAnimation === 'idle' ? 0 : peacockAnimation === 'preen' ? 11_000
+      : peacockAnimation === 'return-a' ? 9_000 : peacockAnimation === 'return-b' ? 49_000
+        : peacockAnimation === 'walk-a' ? 7_000 : 47_000
+    : pigAnimation === 'idle' ? 0 : pigAnimation === 'walk-a' ? 24_000 : 6_000
+  game.step(time, 0)
 }
 function sync() {
   revision++
   window.dispatchEvent(new CustomEvent('farm:sync', { detail: snapshot() }))
-  renderSelectedPigFrame()
+  renderSelectedFrame()
 }
 function button(id: string, action: () => void) { document.getElementById(id)!.addEventListener('click', action) }
 document.getElementById('stage')!.addEventListener('change', event => { stage = (event.target as HTMLSelectElement).value; sync() })
@@ -104,16 +119,24 @@ document.getElementById('sheep-stage')!.addEventListener('change', event => { sh
 document.getElementById('pig-stage')!.addEventListener('change', event => { pigStage = (event.target as HTMLSelectElement).value; sync() })
 document.getElementById('pig-animation')!.addEventListener('change', event => {
   pigAnimation = (event.target as HTMLSelectElement).value
-  if (pigAnimation === 'live') game.loop.wake()
-  else renderSelectedPigFrame()
+  if (pigAnimation === 'live' && peacockAnimation === 'live') game.loop.wake()
+  else renderSelectedFrame()
+})
+document.getElementById('peacock-stage')!.addEventListener('change', event => {
+  peacockStage = (event.target as HTMLSelectElement).value; sync()
+})
+document.getElementById('peacock-animation')!.addEventListener('change', event => {
+  peacockAnimation = (event.target as HTMLSelectElement).value
+  if (pigAnimation === 'live' && peacockAnimation === 'live') game.loop.wake()
+  else renderSelectedFrame()
 })
 document.getElementById('species')!.addEventListener('change', event => { selectedSpecies = (event.target as HTMLSelectElement).value })
 button('visit', () => { visiting = !visiting; document.getElementById('visit')!.textContent = visiting ? 'Visita' : 'Própria';
-  volumes = []; game.scene.start('FarmScene', sceneData()); renderSelectedPigFrame() })
+  volumes = []; game.scene.start('FarmScene', sceneData()); renderSelectedFrame() })
 button('motion', () => { reducedMotion = !reducedMotion;
   document.getElementById('motion')!.textContent = reducedMotion ? 'Movimento reduzido' : 'Movimento normal';
   volumes = []; game.scene.remove('FarmScene');
-  game.scene.add('FarmScene', FarmScene, true, sceneData()); renderSelectedPigFrame() })
+  game.scene.add('FarmScene', FarmScene, true, sceneData()); renderSelectedFrame() })
 button('plots', () => { allUnlocked = !allUnlocked; document.getElementById('plots')!.textContent = allUnlocked ? '28 lotes' : '9 lotes'; sync() })
 button('view', () => { overview = !overview; const mode = overview ? 'overview' : 'focus'; game.registry.set('farmCameraMode', mode);
   document.getElementById('view')!.textContent = mode; window.dispatchEvent(new CustomEvent('farm:camera:mode', { detail: { mode } })) })
@@ -123,14 +146,26 @@ button('sync', () => {
   for (let i = 0; i < 5; i++) sync()
   document.getElementById('status')!.textContent = `Objetos: ${before} → ${scene.children.length}`
 })
-button('restart', () => { volumes = []; game.scene.start('FarmScene', sceneData()); renderSelectedPigFrame() })
+button('restart', () => { volumes = []; game.scene.start('FarmScene', sceneData()); renderSelectedFrame() })
+button('restart-camera', () => {
+  volumes = []
+  overview = !overview
+  const mode = overview ? 'overview' : 'focus'
+  game.registry.set('farmCameraMode', mode)
+  game.scene.start('FarmScene', sceneData())
+  // Reproduce React's immediate camera event while a scene restart is queued.
+  window.dispatchEvent(new CustomEvent('farm:camera:mode', { detail: { mode } }))
+  document.getElementById('view')!.textContent = mode
+  document.getElementById('status')!.textContent = `Reconstrução + câmera ${mode}`
+  renderSelectedFrame()
+})
 button('volumes', () => {
   if (volumes.length) { volumes.forEach(object => object.destroy()); volumes = []; return }
   const scene = game.scene.getScene('FarmScene')
   const layout = calculateAnimalLayout(calculateFarmPlotLayout(snapshot().plots).bounds)
-  for (const [i, volume] of layout.reserved.entries()) {
-    volumes.push(scene.add.rectangle(volume.x, volume.y - volume.height / 2, volume.width, volume.height, 0x55bbff, 0.3).setDepth(800))
-    volumes.push(scene.add.text(volume.x, volume.y - volume.height, ['Galinha', 'Vaca', 'Ovelha', 'Porco'][i], {
+  for (const [i, volume] of layout.targets.entries()) {
+    volumes.push(scene.add.rectangle(volume.x, volume.y, volume.width, volume.height, 0x55bbff, 0.3).setDepth(800))
+    volumes.push(scene.add.text(volume.x, volume.y - volume.height / 2, ['Galinha', 'Vaca', 'Ovelha', 'Porco', 'Pavão'][i], {
       fontSize: '9px', color: '#142a31', backgroundColor: '#ffffff',
     }).setOrigin(0.5, 1).setDepth(801))
   }
@@ -146,9 +181,12 @@ function done(action: 'help' | 'collect' | 'steal') {
   const cow = selectedSpecies === 'cow'
   const sheep = selectedSpecies === 'sheep'
   const pig = selectedSpecies === 'pig'
-  const historical = pig ? pigCycleId : sheep ? sheepCycleId : cow ? cowCycleId : cycleId
+  const peacock = selectedSpecies === 'peacock'
+  const historical = peacock ? peacockCycleId : pig ? pigCycleId : sheep ? sheepCycleId : cow ? cowCycleId : cycleId
   if (action === 'collect') {
-    if (pig) { pigCycleId = `pig-cycle-${++revision}`; pigStage = 'producing';
+    if (peacock) { peacockCycleId = `peacock-cycle-${++revision}`; peacockStage = 'producing';
+      (document.getElementById('peacock-stage') as HTMLSelectElement).value = peacockStage }
+    else if (pig) { pigCycleId = `pig-cycle-${++revision}`; pigStage = 'producing';
       (document.getElementById('pig-stage') as HTMLSelectElement).value = pigStage }
     else if (sheep) { sheepCycleId = `sheep-cycle-${++revision}`; sheepStage = 'producing';
       (document.getElementById('sheep-stage') as HTMLSelectElement).value = sheepStage }
@@ -159,8 +197,8 @@ function done(action: 'help' | 'collect' | 'steal') {
     sync()
   }
   window.dispatchEvent(new CustomEvent(`animal:${action}:done`, { detail: { operationId: crypto.randomUUID(), action,
-    completedAt: new Date().toISOString(), farmId: 'fixture-farm', animalId: pig ? 'pig' : sheep ? 'sheep' : cow ? 'cow' : 'hen', cycleId: historical,
-    animalTypeId: pig ? 'pig' : sheep ? 'sheep' : cow ? 'cow' : 'chicken', productId: pig ? 'fertilizer' : sheep ? 'wool' : cow ? 'milk' : 'egg', quantity: action === 'steal' ? 1 : pig ? 4 : 8,
+    completedAt: new Date().toISOString(), farmId: 'fixture-farm', animalId: peacock ? 'peacock' : pig ? 'pig' : sheep ? 'sheep' : cow ? 'cow' : 'hen', cycleId: historical,
+    animalTypeId: peacock ? 'peacock' : pig ? 'pig' : sheep ? 'sheep' : cow ? 'cow' : 'chicken', productId: peacock ? 'feather' : pig ? 'fertilizer' : sheep ? 'wool' : cow ? 'milk' : 'egg', quantity: action === 'steal' ? 1 : peacock ? 7 : pig ? 4 : 8,
     coinsSpent: 0, coinsGained: action === 'help' ? 2 : 0, xpGained: action === 'steal' ? 0 : 5, ownerBonusAdded: 1 } }))
 }
 button('help', () => done('help')); button('collect', () => done('collect'))

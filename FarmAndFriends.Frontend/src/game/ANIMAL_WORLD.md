@@ -4,12 +4,13 @@
 
 ## Bridge
 
-Os contratos compartilhados estão em `src/types/animalEvents.ts`.
+Os contratos de animais estão em `src/types/animalEvents.ts`; `FarmSceneReady` está em `src/farm/farmSceneSync.ts`.
 
 | Evento | Direção | Payload e significado |
 | --- | --- | --- |
 | `animal:select` | Phaser → React | `{farmId,animalId,screenX?,screenY?}`; intenção pelo alvo de cada espécie e seu produto, com âncora visual opcional |
 | `farm:sync` | React → Phaser | `Farm`; snapshot já aceito pelo owner React, incluindo animalState |
+| `farm:scene:ready` | Phaser → React | `FarmSceneReady` (`{farmId,isVisiting}`); no fim de `create`, após instalação dos listeners; a ponte reaplica o último snapshot React aceito da mesma fazenda e modo |
 | `animal:collect:done` | React → Phaser | `AnimalCollectDone`; efeito confirmado após sync |
 | `animal:help:done` | React → Phaser | `AnimalHelpDone`; efeito confirmado após sync |
 | `animal:steal:done` | React → Phaser | `AnimalStealDone`; efeito confirmado após sync |
@@ -21,7 +22,9 @@ O modal usa o padrão compacto de `PlotModal`: nome, estado, cuidados resumidos 
 
 ## Geometria e arte
 
-`animalLayout.ts` usa os bounds reais de `calculateFarmPlotLayout`, sem alterar coordenadas dos lotes. O espaço visual 250×122 acompanha o paralelogramo do cercado, ancorado acima da lateral direita dos plots e junto ao celeiro. Quatro volumes mantêm espaço para galinha, vaca, ovelha e porco. Galinha e ninho ocupam o setor esquerdo; vaca/bezerra e balde de leite ocupam o setor superior central; ovelha/cordeiro ocupa o terceiro setor à direita; porco/filhote ocupa o quarto setor. Somente espécies presentes no snapshot são instanciadas. O cercado é apenas cenário, sem área clicável ou modal coletivo. Os targets das espécies são disjuntos e incluem animal/produto quando existe; cada clique abre somente o modal do animal selecionado.
+A ponte `usePhaserGame` mantém o último snapshot recebido por props ou pelo `farm:sync` de `useFarm` e o reaplica quando a cena está pronta. `useFarm` é o único emissor das atualizações normais; a ponte emite apenas no `farm:scene:ready`. Se uma compra termina durante preload ou restart, o evento aceito é guardado antes mesmo do render React e reaplicado sem recarregar a página. Fazenda e modo devem corresponder; props repetidas não emitem evento. Cada restart recebe uma reaplicação, e os listeners React são removidos no cleanup. A cena não altera o estado React ao anunciar prontidão.
+
+`animalLayout.ts` usa os bounds reais de `calculateFarmPlotLayout`, sem alterar coordenadas dos lotes. O espaço visual 250×122 acompanha o paralelogramo do cercado, ancorado acima da lateral direita dos plots e junto ao celeiro. Cinco volumes mantêm espaço para galinha, vaca, ovelha, porco e pavão; `targets` define os retângulos de clique usados no runtime e na fixture. Galinha e ninho ocupam o setor esquerdo; vaca/bezerra e balde de leite ocupam o setor superior central; ovelha/cordeiro ocupa o terceiro setor à direita; porco/filhote ocupa o quarto setor; pavão/filhote ocupa o centro relativo (-4,+7), quinto setor, conforme os ajustes atuais do usuário. Seu alvo atual mede 38×28, com centro relativo (-6,-7), top-21 e bottom 7. Ele cobre o corpo superior, mas os pixels mais altos da cabeça do adulto ficam fora do clique; revisar essa cobertura na análise de gameplay posterior. As posições seguem a prévia aprovada, com ninho e balde acompanhando galinha e vaca. Somente espécies presentes no snapshot são instanciadas. O cercado é apenas cenário, sem área clicável ou modal coletivo. Os targets das espécies são disjuntos e cobrem parte de cada animal e o produto quando existe; cada clique no alvo abre somente o modal do animal selecionado.
 
 Overview inclui o envelope de culturas altas e cercado, sem clamp mínimo que corte o conteúdo em telas estreitas. Foco permite arrastar quando há cercado; sem cercado, mantém o comportamento anterior. A mesma tolerância de arraste e supressão de clique protege plots/animais. Input não atravessa modal; restart por mudança de topologia preserva os blockers atuais.
 
@@ -39,4 +42,18 @@ Overview inclui o envelope de culturas altas e cercado, sem clamp mínimo que co
 
 Sync preserva objetos por animalId, atualiza estágio, textura e produto, destrói removidos e não reinicia animação. Uma coleta altera somente o animal/ciclo confirmado, mantendo o produto das outras espécies. Instalação nova aparece mesmo se nenhum plot mudou. Destruição remove handlers de update e window, targets, imagens, textos temporários e tweens de feedback. Nenhum timer produtivo foi criado em Phaser. Movimento reduzido fixa os animais em idle e evita grãos/deslocamento do feedback.
 
-Testes puros: `tests/animalLayout.test.ts` e `tests/animalVisuals.test.ts` cobrem 9 a 28 desbloqueios, reservas/targets separados, enquadramento portrait/landscape, frames dos oito atlas, patrulhas, estados de lã/adubo e identidade dos efeitos. `tests/fixtures/animal-world.html` carrega a cena real com snapshots sintéticos das quatro espécies, controles independentes de estágio, visita/própria, feedback por espécie, repetição de sync, reconstrução, modal e volumes rotulados. O seletor de quadro do porco (Ao vivo/Parado/Passo A/Passo B) usa somente na fixture as APIs públicas `game.loop.sleep/wake` e `game.step(time, 0)` para congelar e renderizar quadros comparáveis; mudar estágio ou reconstruir reaplica o quadro escolhido. Os tempos A/B têm o mesmo deslocamento e orientação da patrulha, mas paridade oposta da passada. O controle de movimento reduzido emula a media query apenas nessa fixture e recria a cena. A fixture é ferramenta de QA servida pelo Vite, sem entrada no bundle de produção e sem API. Sua inspeção não comprova fluxo autenticado ou regras backend.
+Testes puros: `tests/animalLayout.test.ts` e `tests/animalVisuals.test.ts` cobrem 9 a 28 desbloqueios, reservas/targets separados, enquadramento portrait/landscape, frames dos dez atlas, patrulhas, estados de lã/adubo e identidade dos efeitos. `tests/fixtures/animal-world.html` carrega a cena real com snapshots sintéticos das cinco espécies, controles independentes de estágio, visita/própria, feedback por espécie, repetição de sync, reconstrução, modal e volumes rotulados. O seletor de quadro do porco (Ao vivo/Parado/Passo A/Passo B) usa somente na fixture as APIs públicas `game.loop.sleep/wake` e `game.step(time, 0)` para congelar e renderizar quadros comparáveis; mudar estágio ou reconstruir reaplica o quadro escolhido. Os tempos A/B têm o mesmo deslocamento e orientação da patrulha, mas paridade oposta da passada. O controle de movimento reduzido emula a media query apenas nessa fixture e recria a cena. A fixture é ferramenta de QA servida pelo Vite, sem entrada no bundle de produção e sem API. Sua inspeção não comprova fluxo autenticado ou regras backend.
+
+
+## Pavão — arte e movimento v6 aprovados em 13 de outubro de 2026
+
+`peacock-adult-poses` (1774×887) e `peachick-poses` (2172×724) usam cópias exatas dos PNG/JSON aprovados em `imgs/animal-enclosure/2026-10-02-peacock-v1`. A pasta reúne a arte original sem redesenho e os pivôs aprovados no ciclo v6. Adulto conserva `producing/ready` × `idle/walk-a/walk-b/preen`; o filhote conserva `peachick` nas mesmas poses. Escalas fixas por idade: adulto 36/375 e jovem 26/505. Pivôs por quadro registram o corpo acima das pernas, sem seguir a ponta do pé e sem alterar recortes da imagem.
+
+A/B alternam a cada 520 ms como pequeno levantar/apoiar, com pequenas variações em ambos os pés. O pavão permanece na posição atual, sempre `offset=0` e `flipX=false`. O ciclo visual de 20 s preserva as janelas existentes: idle antes de 6 s, A/B de 6 até 10 s, preen de 10 até 13 s e idle até o fim. Movimento reduzido fixa idle. Isso é somente apresentação; nenhum timestamp local determina a produção.
+
+Somente `stage=adult` e `cycle.isReady=true` abrem o leque. Roubo parcial conserva leque e ciclo; coleta só fecha o leque quando o snapshot confirmado substitui o ciclo. Não há objeto de pena avulsa. Eventos, efeitos confirmados, limpeza dos objetos e bloqueio de input permanecem os mesmos; feedback confirmado continua nomeando `pena/penas`.
+
+A fixture conserva seleção de estado/quadro, sync, restart, visita, modal e feedback. Com a cadência atual, tempos 7000/47000 ms continuam selecionando A/B na mesma posição e direção. Os controles históricos “Retorno A/B”, nos tempos 9000/49000 ms, agora selecionam A/B sem inversão: o pavão não faz mais patrulha nem retorno. A fixture segue sintética, sem provar regras backend ou sessão autenticada.
+
+
+Ao trocar entre fazenda própria e visita, `usePhaserGame` grava o modo no registry e deixa `create()` aplicá-lo após reconstrução. Eventos de câmera recebidos durante shutdown/loading continuam persistindo a preferência, mas só movimentam uma cena ativa com layout pronto e câmera principal disponível. O controle `Reconstruir + câmera` reproduz o dispatch imediato durante restart; o teste puro cobre câmera principal removida e layout ainda incompleto.

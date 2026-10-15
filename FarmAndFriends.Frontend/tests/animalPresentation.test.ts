@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { animalGrowthDeadline, animalPresentation, animalSuccessMessage, productPresentation, productQuantity } from '../src/animals/animalPresentation.ts'
+import { animalAcquiredLabel, animalCareLabel, animalGrowthDeadline, animalPresentation, animalSuccessMessage, productPresentation, productQuantity } from '../src/animals/animalPresentation.ts'
 import { animalReason } from '../src/animals/animalMessages.ts'
+import { sellableAnimalProducts } from '../src/fertilizer/fertilizerState.ts'
 import type { AnimalOperationEffect } from '../src/types/animal.ts'
 
 const effect: AnimalOperationEffect = {
@@ -39,7 +40,7 @@ test('sheep arrives as a lamb, grows into a sheep, and wool has distinct feedbac
 test('calf and chick countdowns use growth deadlines; adult countdown uses its species cycle', () => {
   const maturesAt = '2026-09-17T20:00:00Z'
   const readyAt = '2026-09-18T20:00:00Z'
-  for (const stage of ['calf', 'chick', 'lamb'] as const) {
+  for (const stage of ['calf', 'chick', 'lamb', 'piglet', 'peachick'] as const) {
     assert.equal(animalGrowthDeadline({ stage, maturesAt, cycle: null }), maturesAt)
   }
   const cycle = { id: 'milk-cycle', productId: 'milk', startsAt: maturesAt, readyAt, isReady: false,
@@ -80,4 +81,34 @@ test('pig fertilizer is a collectable utility with its own names', () => {
   assert.equal(productQuantity('fertilizer', 2), '2 adubos')
   assert.equal(animalSuccessMessage({ ...effect, productId: 'fertilizer', quantity: 4 }),
     'Você coletou 4 adubos. Um novo ciclo iniciou.')
+})
+
+test('peacock grows from its named chick and feathers use collection, theft and sale feedback', () => {
+  assert.equal(animalPresentation('peacock').youngName, 'Filhote de pavão')
+  assert.equal(animalPresentation('peacock').buyLabel, 'Comprar filhote de pavão')
+  assert.equal(animalPresentation('peacock').icon, '🦚')
+  assert.equal(animalAcquiredLabel('peacock'), 'adquirido')
+  assert.equal(animalCareLabel('peacock'), 'Cuidado')
+  assert.equal(animalAcquiredLabel('sheep'), 'adquirida')
+  assert.equal(animalCareLabel('sheep'), 'Cuidada')
+  assert.equal(animalSuccessMessage({ ...effect, action: 'buy-animal', animalTypeId: 'peacock' }),
+    'Seu filhote de pavão chegou e crescerá na fazenda.')
+  assert.deepEqual(productPresentation('feather'), { icon: '🪶', name: 'Penas', actionName: 'penas' })
+  assert.equal(productQuantity('feather', 1), '1 pena')
+  assert.equal(productQuantity('feather', 6), '6 penas')
+  const featherEffect = { ...effect, animalTypeId: 'peacock', productId: 'feather', quantity: 6 }
+  assert.equal(animalSuccessMessage(featherEffect), 'Você coletou 6 penas. Um novo ciclo iniciou.')
+  assert.equal(animalSuccessMessage({ ...featherEffect, action: 'steal', quantity: 1 }), 'Você roubou 1 pena.')
+  assert.equal(animalSuccessMessage({ ...featherEffect, action: 'sell-animal-product', coinsGained: 937 }),
+    'Você vendeu 6 penas e recebeu 937 moedas.')
+})
+
+test('feathers enter product sale rows without adding animals or fertilizer to sales', () => {
+  const items = [
+    { itemType: 'AnimalProduct' as const, itemId: 'feather', quantity: 6 },
+    { itemType: 'AnimalProduct' as const, itemId: 'fertilizer', quantity: 4 },
+    { itemType: 'AnimalProduct' as const, itemId: 'wool', quantity: 0 },
+    { itemType: 'Crop' as const, itemId: 'carrot', quantity: 3 },
+  ]
+  assert.deepEqual(sellableAnimalProducts(items), [items[0]])
 })

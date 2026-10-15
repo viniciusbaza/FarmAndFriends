@@ -127,7 +127,7 @@ public sealed partial class AnimalEnclosureService(
                 case "buy-animal":
                     var species = AnimalSpeciesRules.Find(itemId)!;
                     if (aggregate.Enclosure == null) throw Error("ENCLOSURE_REQUIRED", "Compre o cercado primeiro.");
-                    if (aggregate.Animals.Any(a => a.AnimalTypeId == species.Id)) throw Error("ALREADY_OWNED", $"Você já possui uma {species.DisplayName.ToLowerInvariant()}.");
+                    if (aggregate.Animals.Any(a => a.AnimalTypeId == species.Id)) throw Error("ALREADY_OWNED", $"Você já possui {(species.Id is "pig" or "peacock" ? "um" : "uma")} {species.DisplayName.ToLowerInvariant()}.");
                     if (actor.Level < AnimalSpeciesRules.MinLevel(species, Policy)) throw Error("LEVEL_REQUIRED", "Seu nível ainda é insuficiente.");
                     spent = AnimalSpeciesRules.Price(species, Policy);
                     if (inventory.Coins < spent) throw Error("INSUFFICIENT_FUNDS", "Moedas insuficientes.");
@@ -203,7 +203,7 @@ public sealed partial class AnimalEnclosureService(
                     AnimalId = animalId, AnimalCycleId = effectCycleId, AnimalCompletionId = completion.Id,
                     CreatedAt = now, Message = action == "help"
                         ? $"Você receberá +{FormatProductQuantity(socialSpecies, bonus)} na próxima coleta com a ajuda de {actor.Username}."
-                        : $"{actor.Username} roubou {FormatProductQuantity(socialSpecies, productQuantity)} da {socialSpecies.DisplayName.ToLowerInvariant()}." });
+                        : $"{actor.Username} roubou {FormatProductQuantity(socialSpecies, productQuantity)} {(socialSpecies.Id is "pig" or "peacock" ? "do" : "da")} {socialSpecies.DisplayName.ToLowerInvariant()}." });
             }
             await db.SaveChangesAsync(ct);
             var current = action == "sell-animal-product" && aggregate.Enclosure == null
@@ -248,6 +248,7 @@ public sealed partial class AnimalEnclosureService(
         "egg" => $"{quantity} {(quantity == 1 ? "ovo" : "ovos")}",
         "milk" => $"{quantity} {(quantity == 1 ? "leite" : "leites")}",
         "wool" => $"{quantity} {(quantity == 1 ? "lã" : "lãs")}",
+        "feather" => $"{quantity} {(quantity == 1 ? "pena" : "penas")}",
         "fertilizer" => $"{quantity} {(quantity == 1 ? "adubo" : "adubos")}",
         _ => $"{quantity} {species.ProductUnits}"
     };
