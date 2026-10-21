@@ -319,7 +319,7 @@ public sealed class BaselineMigrationTests
         var availableMigrations = context.Database
             .GetMigrations()
             .ToArray();
-        Assert.Equal(4, availableMigrations.Length);
+        Assert.Equal(7, availableMigrations.Length);
         Assert.Equal(
             "20260818050938_InitialCreate",
             availableMigrations[0]);
@@ -328,6 +328,9 @@ public sealed class BaselineMigrationTests
             "_RepairTomatoMultiHarvestConfiguration",
             availableMigrations[2]);
         Assert.EndsWith("_AddUserAvatar", availableMigrations[3]);
+        Assert.EndsWith("_AddAnimalEnclosure", availableMigrations[4]);
+        Assert.EndsWith("_AddFertilizerApplications", availableMigrations[5]);
+        Assert.EndsWith("_AllowImmediatelyReadyFertilizedPlots", availableMigrations[6]);
         Assert.Equal(
             availableMigrations,
             (await context.Database.GetAppliedMigrationsAsync()).ToArray());

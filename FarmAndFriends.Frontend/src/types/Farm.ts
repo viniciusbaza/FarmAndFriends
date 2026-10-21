@@ -1,3 +1,5 @@
+import type { AnimalStateEnvelope } from './animal'
+
 export type PlotPlantDone = {
   plotId: string
   xpGained: number
@@ -195,6 +197,8 @@ export type Plot = {
   seedId?: string | null
   plantedAt?: string | null
   currentHarvestCycle: number | null
+  currentHarvestCycleStartedAt: string | null
+  fertilizedAt?: string | null
   isReady: boolean
   readyAt?: string | null
   remainingYield: number | null
@@ -206,6 +210,7 @@ export type Plot = {
 }
 
 export type Farm = {
+  animalState?: AnimalStateEnvelope | null
   id: string
   name: string
   ownerUserId: string

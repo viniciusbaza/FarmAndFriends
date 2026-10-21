@@ -19,6 +19,18 @@
   transform: translate(-50%, -100%);
 }
 
+.animal-modal-anchor[data-side="above"] {
+  transform: translate(-50%, calc(-100% - 0.75rem));
+}
+
+.animal-modal-anchor[data-side="below"] {
+  transform: translate(-50%, 0.75rem);
+}
+
+.animal-modal {
+  max-height: var(--animal-modal-max-height);
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -128,6 +140,15 @@
 
   .plot-modal {
     width: 100%;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+  }
+
+  .plot-modal-anchor.animal-modal-anchor {
+    transform: none;
+  }
+
+  .animal-modal {
     max-height: calc(100vh - 2rem);
     max-height: calc(100dvh - 2rem);
   }

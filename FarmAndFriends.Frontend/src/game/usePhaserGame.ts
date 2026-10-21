@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
 import FarmScene from './scenes/FarmScene'
 import type { Farm } from '../types/Farm'
+import { FarmSceneSync, type FarmSceneReady } from '../farm/farmSceneSync'
 import {
   dispatchFarmCameraMode,
   type FarmCameraMode,
@@ -20,6 +21,9 @@ export function usePhaserGame(
   const gameRef = useRef<Phaser.Game | null>(null)
   const activeFarmViewRef = useRef<string | null>(null)
   const teardownTimerRef = useRef<number | null>(null)
+  const farmSyncRef = useRef(new FarmSceneSync(snapshot => {
+    window.dispatchEvent(new CustomEvent('farm:sync', { detail: snapshot }))
+  }))
 
   useEffect(() => {
     // StrictMode immediately runs cleanup + setup again in development.
@@ -54,8 +58,20 @@ export function usePhaserGame(
     }
 
     const game = gameRef.current
+    const farmSync = farmSyncRef.current
+    const sceneReady = (event: Event) => {
+      const { farmId, isVisiting } = (event as CustomEvent<FarmSceneReady>).detail
+      farmSync.sceneReady(farmId, isVisiting)
+    }
+    const farmAccepted = (event: Event) => {
+      farmSync.recordAccepted((event as CustomEvent<Farm>).detail)
+    }
+    window.addEventListener('farm:scene:ready', sceneReady)
+    window.addEventListener('farm:sync', farmAccepted)
 
     return () => {
+      window.removeEventListener('farm:scene:ready', sceneReady)
+      window.removeEventListener('farm:sync', farmAccepted)
       // A real unmount has no following setup to cancel this task.
       teardownTimerRef.current = window.setTimeout(() => {
         if (gameRef.current !== game) return
@@ -74,6 +90,7 @@ export function usePhaserGame(
     if (!game || !farm) return
 
     game.registry.set('farmCameraMode', cameraMode)
+    farmSyncRef.current.update(farm, isVisiting)
 
     // SceneManager may still have the first add queued when StrictMode runs
     // this effect again, so the active farm is the idempotency guard.
@@ -87,6 +104,9 @@ export function usePhaserGame(
       }
 
       activeFarmViewRef.current = farmViewKey
+      // The new scene reads the registry in create(). A synchronous event here
+      // could reach the previous scene while Phaser is restarting it.
+      return
     }
 
     dispatchFarmCameraMode(cameraMode)

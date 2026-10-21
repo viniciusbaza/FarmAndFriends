@@ -73,7 +73,7 @@ public static class CropCycleRules
             || plot.CurrentHarvestCycle.Value > seed.HarvestCycles
             || !plot.CurrentHarvestCycleStartedAt.HasValue
             || !plot.ReadyAt.HasValue
-            || plot.ReadyAt.Value <= plot.CurrentHarvestCycleStartedAt.Value)
+            || plot.ReadyAt.Value < plot.CurrentHarvestCycleStartedAt.Value)
         {
             throw new InvalidOperationException(
                 "O estado persistido do ciclo produtivo está inválido.");

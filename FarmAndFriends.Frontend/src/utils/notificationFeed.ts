@@ -12,6 +12,9 @@ export type NotificationAction =
 
 const VISITABLE_NOTIFICATION_TYPES = new Set<number>([
   NotificationType.CropCaredFor,
+  NotificationType.PlotFertilized,
+  NotificationType.AnimalHelped,
+  NotificationType.AnimalProductStolen,
   NotificationType.PestRemoved,
   NotificationType.PestProtectionApplied,
   NotificationType.TheftOccurred,

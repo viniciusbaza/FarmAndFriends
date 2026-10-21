@@ -1,0 +1,53 @@
+{
+  "frames": {
+    "nest-empty": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 380,
+        "h": 275
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 380,
+        "h": 275
+      },
+      "sourceSize": {
+        "w": 380,
+        "h": 275
+      }
+    },
+    "nest-eggs": {
+      "frame": {
+        "x": 380,
+        "y": 0,
+        "w": 375,
+        "h": 275
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 375,
+        "h": 275
+      },
+      "sourceSize": {
+        "w": 375,
+        "h": 275
+      }
+    }
+  },
+  "meta": {
+    "image": "chicken-nests.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 755,
+      "h": 275
+    },
+    "scale": "1"
+  }
+}

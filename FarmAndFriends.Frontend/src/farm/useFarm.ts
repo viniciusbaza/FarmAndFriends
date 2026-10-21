@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { authFetch } from '../api/http'
 import { type Farm } from '../types/Farm'
 import { getNextFarmStateAt } from '../utils/time'
+import { acceptAnimalState, nextAnimalStateAt, patchAnimalFarm } from '../animals/animalState'
+import type { AnimalStateEnvelope } from '../types/animal'
+import { getSessionScope } from '../api/sessionScope'
 import {
   getFarmVisitDecision,
   isCurrentFarmRequest,
@@ -49,9 +52,11 @@ export function useFarmInternal() {
   const canInteract = session.mode === 'OWN'
 
   const fetchFarm = useCallback(async () => {
+    if (`${session.mode}:${session.farmId}` !== activeSessionKeyRef.current) return
+    const authScope = getSessionScope()
     const requestId = ++latestRequestIdRef.current
     const requestSessionKey = `${session.mode}:${session.farmId}`
-    const isCurrentRequest = () => isCurrentFarmRequest(
+    const isCurrentRequest = () => authScope === getSessionScope() && isCurrentFarmRequest(
       requestId,
       latestRequestIdRef.current,
       requestSessionKey,
@@ -66,6 +71,10 @@ export function useFarmInternal() {
 
       const data = await authFetch<Farm>(endpoint)
       if (!isCurrentRequest()) return
+      if (data.animalState && farmRef.current?.id === data.id &&
+          !acceptAnimalState(farmRef.current.animalState, data.animalState)) {
+        data.animalState = farmRef.current.animalState
+      }
 
       const isNewFarm = activeFarmIdRef.current !== data.id
       activeFarmIdRef.current = data.id
@@ -81,6 +90,7 @@ export function useFarmInternal() {
           { detail: data }
         )
       )
+      return data
     } catch (error) {
       if (!isCurrentRequest()) return
 
@@ -127,7 +137,7 @@ export function useFarmInternal() {
     patchOrFactory: ConfirmedPlotPatch | ConfirmedPlotPatchFactory,
   ) => {
     const currentFarm = farmRef.current
-    if (!currentFarm) return
+    if (!currentFarm || !currentFarm.plots.some(plot => plot.id === plotId)) return
 
     // A confirmed mutation is newer than every GET already in flight.
     latestRequestIdRef.current += 1
@@ -158,6 +168,17 @@ export function useFarmInternal() {
     if (nextFarm) {
       window.dispatchEvent(new CustomEvent('farm:sync', { detail: nextFarm }))
     }
+  }, [])
+
+  const patchAnimals = useCallback((incoming: AnimalStateEnvelope) => {
+    lastOwnFarmRef.current = patchAnimalFarm(lastOwnFarmRef.current, incoming)
+    const current = farmRef.current
+    const next = patchAnimalFarm(current, incoming)
+    if (!next || next === current) return
+    latestRequestIdRef.current += 1
+    farmRef.current = next
+    setFarm(next)
+    window.dispatchEvent(new CustomEvent('farm:sync', { detail: next }))
   }, [])
 
   function visitFarm(
@@ -220,13 +241,25 @@ export function useFarmInternal() {
 
   useEffect(() => {
     void fetchFarm()
+    return () => { latestRequestIdRef.current += 1 }
   }, [fetchFarm])
 
-  const nextFarmSyncAt = getNextFarmStateAt(
+  const nextPlotSyncAt = getNextFarmStateAt(
     farm?.plots ?? [],
     isVisiting,
     farm?.nextPestCheckAt ?? null,
   )
+  const animalDeadline = nextAnimalStateAt(farm?.animalState)
+  const deadlines = [nextPlotSyncAt, animalDeadline].filter((value): value is number => value !== null)
+  const nextFarmSyncAt = deadlines.length ? Math.min(...deadlines) : null
+
+  useEffect(() => {
+    const refresh = () => { void fetchFarm() }
+    window.addEventListener('focus', refresh)
+    return () => {
+      window.removeEventListener('focus', refresh)
+    }
+  }, [fetchFarm])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -256,6 +289,7 @@ export function useFarmInternal() {
     visitRecoveryFeedback,
     clearVisitRecoveryFeedback,
     patchPlot,
+    patchAnimals,
     updateOwnFarmName,
     refreshFarm: fetchFarm
   }

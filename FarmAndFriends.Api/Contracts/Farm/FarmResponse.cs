@@ -1,5 +1,6 @@
 using FarmAndFriends.Api.Contracts.Pests;
 using FarmAndFriends.Api.Contracts.Land;
+using FarmAndFriends.Api.Contracts.Animals;
 
 namespace FarmAndFriends.Api.Contracts.Farms;
 
@@ -10,7 +11,8 @@ public record FarmResponse(
     string OwnerUsername,
     List<PlotResponse> Plots,
     DateTime? NextPestCheckAt,
-    LandOfferResponse? LandOffer
+    LandOfferResponse? LandOffer,
+    AnimalStateEnvelope AnimalState
 );
 
 public record PlotResponse(
@@ -21,12 +23,14 @@ public record PlotResponse(
     string? SeedId,
     DateTime? PlantedAt,
     int? CurrentHarvestCycle,
+    DateTime? CurrentHarvestCycleStartedAt,
     bool IsReady,
     DateTime? ReadyAt,
     int? RemainingYield,
     DateTime? ProtectedUntil,
     PestStateResponse? Pest,
-    PlotCareResponse? Care
+    PlotCareResponse? Care,
+    DateTime? FertilizedAt
 );
 
 public record PlotCareResponse(

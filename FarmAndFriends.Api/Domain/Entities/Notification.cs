@@ -23,6 +23,9 @@ public class Notification
 
     public Guid? CareOpportunityId { get; set; }
     public Guid? PestPlotId { get; set; }
+    public Guid? AnimalId { get; set; }
+    public Guid? AnimalCycleId { get; set; }
+    public Guid? AnimalCompletionId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ReadAt { get; set; }

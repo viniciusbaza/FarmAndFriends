@@ -1,0 +1,229 @@
+{
+  "frames": {
+    "piglet-idle": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8875598086124402
+      }
+    },
+    "piglet-walk-a": {
+      "frame": {
+        "x": 418,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8875598086124402
+      }
+    },
+    "piglet-walk-b": {
+      "frame": {
+        "x": 836,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8875598086124402
+      }
+    },
+    "adult-idle": {
+      "frame": {
+        "x": 0,
+        "y": 418,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8851674641148325
+      }
+    },
+    "adult-walk-a": {
+      "frame": {
+        "x": 418,
+        "y": 418,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8851674641148325
+      }
+    },
+    "adult-walk-b": {
+      "frame": {
+        "x": 836,
+        "y": 418,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8851674641148325
+      }
+    },
+    "adult-ready-idle": {
+      "frame": {
+        "x": 0,
+        "y": 836,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8516746411483254
+      }
+    },
+    "adult-ready-walk-a": {
+      "frame": {
+        "x": 418,
+        "y": 836,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8516746411483254
+      }
+    },
+    "adult-ready-walk-b": {
+      "frame": {
+        "x": 836,
+        "y": 836,
+        "w": 418,
+        "h": 418
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 418,
+        "h": 418
+      },
+      "sourceSize": {
+        "w": 418,
+        "h": 418
+      },
+      "pivot": {
+        "x": 0.54,
+        "y": 0.8516746411483254
+      }
+    }
+  },
+  "meta": {
+    "image": "pig-cycle-poses.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 1254,
+      "h": 1254
+    },
+    "scale": "1"
+  }
+}

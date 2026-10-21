@@ -17,6 +17,9 @@ export const NotificationType = {
   PestConsumed: 5,
   PestRemoved: 6,
   PestProtectionApplied: 7,
+  AnimalHelped: 8,
+  AnimalProductStolen: 9,
+  PlotFertilized: 10,
 } as const
 
 export type NotificationType =
@@ -48,6 +51,9 @@ export type SocialNotification = {
   theftLogId: string | null
   careOpportunityId: string | null
   pestPlotId: string | null
+  animalId?: string | null
+  animalCycleId?: string | null
+  animalCompletionId?: string | null
   createdAt: string
   readAt: string | null
 }

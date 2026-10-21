@@ -1,3 +1,4 @@
+using System.Data;
 using System.Security.Claims;
 using FarmAndFriends.Api.Contracts.Farms;
 using FarmAndFriends.Api.Domain.Services;
@@ -12,6 +13,7 @@ namespace FarmAndFriends.Api.Controllers;
 [ApiController]
 [Route("farms")]
 [Authorize]
+[ServiceFilter(typeof(AnimalExceptionFilter))]
 public class FarmsController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -19,23 +21,29 @@ public class FarmsController : ControllerBase
     private readonly CropCareService _cropCareService;
     private readonly PestService _pestService;
     private readonly LandExpansionService _landExpansionService;
+    private readonly AnimalEnclosureService _animalService;
+    private readonly FertilizerService _fertilizerService;
 
     public FarmsController(
         AppDbContext context,
         FriendshipService friendshipService,
         CropCareService cropCareService,
         PestService pestService,
-        LandExpansionService landExpansionService)
+        LandExpansionService landExpansionService,
+        AnimalEnclosureService animalService,
+        FertilizerService fertilizerService)
     {
         _context = context;
         _friendshipService = friendshipService;
         _cropCareService = cropCareService;
         _pestService = pestService;
         _landExpansionService = landExpansionService;
+        _animalService = animalService;
+        _fertilizerService = fertilizerService;
     }
 
     [HttpGet("my")]
-    public async Task<IActionResult> GetMyFarm()
+    public async Task<IActionResult> GetMyFarm(CancellationToken cancellationToken)
     {
         if (!TryGetCurrentUserId(out var userId))
             return Unauthorized();
@@ -44,31 +52,38 @@ public class FarmsController : ControllerBase
             .AsNoTracking()
             .Where(farm => farm.UserId == userId)
             .Select(farm => (Guid?)farm.Id)
-            .SingleOrDefaultAsync();
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (!farmId.HasValue)
             return NotFound("Fazenda não encontrada.");
 
-        await _pestService.ProcessFarmAsync(farmId.Value);
-        var farm = await LoadFarmAsync(farmId.Value);
-        var now = _pestService.UtcNow;
-        var careStates = await _cropCareService.GetFarmCareStatesAsync(
-            farm!.Id,
+        await _pestService.ProcessFarmAsync(farmId.Value, cancellationToken);
+        var snapshot = await LoadFarmSnapshotAsync(
+            farmId.Value,
             userId,
-            farm.UserId,
-            farm.Plots,
-            now);
+            cancellationToken);
+
+        if (snapshot == null)
+            return NotFound("Fazenda não encontrada.");
+
+        var farm = snapshot.Farm;
+        var animalState = await _animalService.GetStateAsync(
+            userId,
+            farm.Id,
+            cancellationToken);
 
         return Ok(FarmMapper.ToFarmResponse(
             farm,
-            now,
-            careStates,
-            _pestService.GetNextPestCheckAt(farm.Plots, now),
-            _landExpansionService.GetOffer(farm.Id, farm.Plots)));
+            snapshot.ObservedAt,
+            snapshot.CareStates,
+            _pestService.GetNextPestCheckAt(farm.Plots, snapshot.ObservedAt),
+            _landExpansionService.GetOffer(farm.Id, farm.Plots),
+            animalState: animalState,
+            fertilizedAt: snapshot.FertilizedAt));
     }
 
     [HttpGet("{farmId}")]
-    public async Task<IActionResult> GetPublicFarm(Guid farmId)
+    public async Task<IActionResult> GetPublicFarm(Guid farmId, CancellationToken cancellationToken)
     {
         if (!TryGetCurrentUserId(out var userId))
             return Unauthorized();
@@ -77,7 +92,7 @@ public class FarmsController : ControllerBase
             .AsNoTracking()
             .Where(farm => farm.Id == farmId)
             .Select(farm => new { farm.Id, farm.UserId })
-            .SingleOrDefaultAsync();
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (farmIdentity == null)
             return NotFound("Fazenda não encontrada.");
@@ -93,23 +108,30 @@ public class FarmsController : ControllerBase
             return Forbid();
         }
 
-        await _pestService.ProcessFarmAsync(farmId);
-        var farm = await LoadFarmAsync(farmId);
-        var now = _pestService.UtcNow;
-        var careStates = await _cropCareService.GetFarmCareStatesAsync(
-            farm!.Id,
+        await _pestService.ProcessFarmAsync(farmId, cancellationToken);
+        var snapshot = await LoadFarmSnapshotAsync(
+            farmId,
             userId,
-            farm.UserId,
-            farm.Plots,
-            now);
+            cancellationToken);
+
+        if (snapshot == null)
+            return NotFound("Fazenda não encontrada.");
+
+        var farm = snapshot.Farm;
+        var animalState = await _animalService.GetStateAsync(
+            userId,
+            farm.Id,
+            cancellationToken);
 
         return Ok(FarmMapper.ToFarmResponse(
             farm,
-            now,
-            careStates,
-            _pestService.GetNextPestCheckAt(farm.Plots, now),
+            snapshot.ObservedAt,
+            snapshot.CareStates,
+            _pestService.GetNextPestCheckAt(farm.Plots, snapshot.ObservedAt),
             landOffer: null,
-            isOwnerView: false));
+            isOwnerView: false,
+            animalState: animalState,
+            fertilizedAt: snapshot.FertilizedAt));
     }
 
     [HttpGet("{farmId}/theft-log")]
@@ -178,12 +200,47 @@ public class FarmsController : ControllerBase
         return Ok(notifications);
     }
 
-    private async Task<Domain.Entities.Farm?> LoadFarmAsync(Guid farmId) =>
+    private async Task<FarmReadSnapshot?> LoadFarmSnapshotAsync(
+        Guid farmId,
+        Guid viewerUserId,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(
+            IsolationLevel.RepeatableRead,
+            cancellationToken);
+        var farm = await LoadFarmAsync(farmId, cancellationToken);
+        if (farm == null)
+            return null;
+
+        var observedAt = _pestService.UtcNow;
+        var careStates = await _cropCareService.GetFarmCareStatesAsync(
+            farm.Id,
+            viewerUserId,
+            farm.UserId,
+            farm.Plots,
+            observedAt,
+            cancellationToken);
+        var fertilizedAt = await _fertilizerService.GetCurrentApplicationsAsync(
+            farm.Id,
+            cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new(farm, observedAt, careStates, fertilizedAt);
+    }
+
+    private async Task<Domain.Entities.Farm?> LoadFarmAsync(
+        Guid farmId,
+        CancellationToken cancellationToken) =>
         await _context.Farms
             .AsNoTracking()
             .Include(farm => farm.User)
             .Include(farm => farm.Plots)
-            .SingleOrDefaultAsync(farm => farm.Id == farmId);
+            .SingleOrDefaultAsync(farm => farm.Id == farmId, cancellationToken);
+
+    private sealed record FarmReadSnapshot(
+        Domain.Entities.Farm Farm,
+        DateTime ObservedAt,
+        IReadOnlyDictionary<Guid, PlotCropCareState> CareStates,
+        IReadOnlyDictionary<Guid, DateTime> FertilizedAt);
 
     private bool TryGetCurrentUserId(out Guid userId) =>
         Guid.TryParse(

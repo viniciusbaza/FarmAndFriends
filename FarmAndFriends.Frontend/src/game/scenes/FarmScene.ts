@@ -1,8 +1,9 @@
 import Phaser from 'phaser'
+import type { FarmSceneReady } from '../../farm/farmSceneSync'
 import { gridToIso } from '../iso/isoUtils'
-import farmFontImage from '../assets/fonts/thick_8x8.png'
-import farmFontData from '../assets/fonts/thick_8x8.xml?url'
-import farmEnvironment from '../assets/environment/farm-clearing.png'
+import farmFontImage from '../assets/fonts/minogram_6x10.png'
+import farmFontData from '../assets/fonts/minogram_6x10.xml?url'
+import farmEnvironment from '../assets/environment/farm-clearing-enclosure-v2.png'
 import plotImage from '../assets/tiles/plot.png'
 import plotLockedImage from '../assets/tiles/plot-locked.png'
 import plotGlowImage from '../assets/tiles/plot-glow.png'
@@ -16,11 +17,16 @@ import {
 } from '../farmLayout'
 import {
   FARM_CAMERA_MODE_EVENT,
+  canMoveFarmCamera,
+  getFarmCameraCenter,
   type FarmCameraMode,
   type FarmCameraModeDetail,
 } from '../farmCamera'
 import { resolveLandOfferPlotId } from '../landOfferVisual'
 import { canReceivePlotInput } from '../plotInput'
+import { AnimalEnclosureWorld } from '../AnimalEnclosureWorld'
+import { preloadAnimalAssets } from '../animalAssets'
+import { animalOverviewZoom, worldBounds, unionWorldBounds } from '../animalLayout'
 import cropSproutCarrotImage from '../assets/crops/sprout/carrot.png'
 import cropSproutCornImage from '../assets/crops/sprout/corn.png'
 import cropSproutPumpkinImage from '../assets/crops/sprout/pumpkin.png'
@@ -114,6 +120,8 @@ export default class FarmScene extends Phaser.Scene {
   private farm!: Farm
   private isVisiting = false
   private environment?: Phaser.GameObjects.Image
+  private animalWorld: AnimalEnclosureWorld | null = null
+  private worldVisualBounds = new Phaser.Geom.Rectangle()
   private modalBlockers = new Set<string>()
   private plotVisuals = new Map<string, PlotVisual>()
   private harvestVisualTransitions = new Map<string, HarvestVisualTransition>()
@@ -121,6 +129,7 @@ export default class FarmScene extends Phaser.Scene {
   private plotBounds = new Phaser.Geom.Rectangle()
   private plotVisualBounds = new Phaser.Geom.Rectangle()
   private cameraContentBounds = new Phaser.Geom.Rectangle()
+  private cameraLayoutReady = false
   private cameraMode: FarmCameraMode = 'focus'
   private overviewZoom = 1
   private focusZoom = 1
@@ -143,12 +152,15 @@ export default class FarmScene extends Phaser.Scene {
     super('FarmScene')
   }
 
-  init(data: { farm: Farm; isVisiting: boolean }) {
+  init(data: { farm: Farm; isVisiting: boolean; modalSources?: string[] }) {
+    this.cameraLayoutReady = false
     this.farm = data.farm
     this.isVisiting = data.isVisiting
+    this.modalBlockers = new Set(data.modalSources ?? [])
   }
 
   preload() {
+    preloadAnimalAssets(this)
     this.load.bitmapFont('farm-font', farmFontImage, farmFontData)
     this.load.image('farm-environment', farmEnvironment)
     this.load.image('plot', plotImage)
@@ -177,7 +189,7 @@ export default class FarmScene extends Phaser.Scene {
     this.clearCropVisualTransitionTimer()
     this.plotVisuals.clear()
     this.harvestVisualTransitions.clear()
-    this.modalBlockers.clear()
+    this.input.enabled = this.modalBlockers.size === 0
     this.cameraMode =
       this.registry.get('farmCameraMode') === 'overview'
         ? 'overview'
@@ -212,12 +224,18 @@ export default class FarmScene extends Phaser.Scene {
       this.createPlot(plot, plotLayout.originX, plotLayout.originY)
     }
     this.scheduleNextCropVisualTransition()
-
+    this.animalWorld?.destroy()
+    this.animalWorld = new AnimalEnclosureWorld(this, this.farm.id, plotLayout.bounds,
+      () => this.modalBlockers.size === 0 && this.input.enabled && !this.panMoved &&
+        this.time.now >= this.suppressPlotClickUntil && !this.cameraTween,
+      this.reduceMotion)
+    this.animalWorld.sync(this.farm.animalState)
     this.updateCameraContentBounds()
 
     this.syncLandOfferSign()
 
     this.layoutCamera(this.scale.gameSize.width, this.scale.gameSize.height)
+    this.cameraLayoutReady = true
     this.cameras.main.fadeIn(260)
     this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize)
     window.addEventListener(FARM_CAMERA_MODE_EVENT, this.onCameraModeChange)
@@ -233,6 +251,7 @@ export default class FarmScene extends Phaser.Scene {
     window.addEventListener('plot:plant:done', this.onPlantDone)
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.cameraLayoutReady = false
       window.removeEventListener('plot:plant:done', this.onPlantDone)
     })
 
@@ -286,11 +305,19 @@ export default class FarmScene extends Phaser.Scene {
       this.cleanupPestVisuals()
       this.cleanupHarvestVisualTransitions()
       this.clearCropVisualTransitionTimer()
+      this.animalWorld?.destroy()
+      this.animalWorld = null
       this.plotVisuals.clear()
       this.cancelPan()
       this.stopCameraMotion()
       this.game.canvas.style.cursor = 'default'
     })
+
+    // Purchases or refreshes may finish during preload/restart. React replays
+    // its latest accepted snapshot only after the scene can consume farm:sync.
+    window.dispatchEvent(new CustomEvent<FarmSceneReady>('farm:scene:ready', {
+      detail: { farmId: this.farm.id, isVisiting: this.isVisiting },
+    }))
   }
 
   private createBackdrop() {
@@ -352,7 +379,7 @@ export default class FarmScene extends Phaser.Scene {
 
   private onResize = (gameSize: Phaser.Structs.Size) => {
     const previousCenter =
-      this.cameraMode === 'overview'
+      this.cameraMode === 'overview' && !this.animalWorld?.visible
         ? this.getCameraCenter()
         : undefined
 
@@ -366,11 +393,15 @@ export default class FarmScene extends Phaser.Scene {
     const environment = this.environment
     if (!environment) return
 
+    let visualBounds = worldBounds(this.plotVisualBounds.left, this.plotVisualBounds.top,
+      this.plotVisualBounds.right, this.plotVisualBounds.bottom)
+    if (this.animalWorld?.visible) visualBounds = unionWorldBounds(visualBounds, this.animalWorld.layout.bounds)
+    this.worldVisualBounds.setTo(visualBounds.left, visualBounds.top, visualBounds.width, visualBounds.height)
     const environmentBounds = environment.getBounds()
-    const left = Math.min(environmentBounds.left, this.plotVisualBounds.left)
-    const top = Math.min(environmentBounds.top, this.plotVisualBounds.top)
-    const right = Math.max(environmentBounds.right, this.plotVisualBounds.right)
-    const bottom = Math.max(environmentBounds.bottom, this.plotVisualBounds.bottom)
+    const left = Math.min(environmentBounds.left, visualBounds.left)
+    const top = Math.min(environmentBounds.top, visualBounds.top)
+    const right = Math.max(environmentBounds.right, visualBounds.right)
+    const bottom = Math.max(environmentBounds.bottom, visualBounds.bottom)
 
     this.cameraContentBounds.setTo(
       left,
@@ -393,7 +424,11 @@ export default class FarmScene extends Phaser.Scene {
     const compactLayout = width < 768 || height < 600
     this.hudSafeArea = compactLayout ? 86 : 96
 
-    if (isPortrait) {
+    if (this.animalWorld?.visible) {
+      this.overviewZoom = animalOverviewZoom(worldBounds(this.worldVisualBounds.left,
+        this.worldVisualBounds.top, this.worldVisualBounds.right, this.worldVisualBounds.bottom),
+      width, height, this.hudSafeArea)
+    } else if (isPortrait) {
       const fitWidth = (width - 24) / this.plotVisualBounds.width
       const fitHeight =
         (height - this.hudSafeArea - 24) / this.plotVisualBounds.height
@@ -443,18 +478,14 @@ export default class FarmScene extends Phaser.Scene {
 
   private getHomeCameraCenter(zoom: number) {
     return new Phaser.Math.Vector2(
-      this.plotVisualBounds.centerX,
-      this.plotVisualBounds.centerY - this.hudSafeArea / (2 * zoom),
+      this.worldVisualBounds.centerX,
+      this.worldVisualBounds.centerY - this.hudSafeArea / (2 * zoom),
     )
   }
 
   private getCameraCenter() {
-    const camera = this.cameras.main
-
-    return new Phaser.Math.Vector2(
-      camera.scrollX + camera.width / (2 * camera.zoom),
-      camera.scrollY + camera.height / (2 * camera.zoom),
-    )
+    const center = getFarmCameraCenter(this.cameras.main)
+    return new Phaser.Math.Vector2(center.x, center.y)
   }
 
   private clampPanCenter(x: number, y: number, zoom: number) {
@@ -554,6 +585,9 @@ export default class FarmScene extends Phaser.Scene {
     if (mode !== 'focus' && mode !== 'overview') return
 
     this.registry.set('farmCameraMode', mode)
+    // Restart is queued by Phaser. Persist the preference now; create() reads
+    // it once the new camera and bounds exist, without moving a dead camera.
+    if (!canMoveFarmCamera(this.sys.isActive(), this.cameraLayoutReady, this.cameras.main)) return
 
     // Sincronizações da fazenda podem reenviar o modo atual. Não recentraliza
     // nesses casos para preservar o deslocamento feito pelo jogador.
@@ -567,7 +601,7 @@ export default class FarmScene extends Phaser.Scene {
 
   private onPanPointerDown = (pointer: Phaser.Input.Pointer) => {
     if (
-      this.cameraMode !== 'overview' ||
+      (this.cameraMode !== 'overview' && !this.animalWorld?.visible) ||
       this.modalBlockers.size > 0 ||
       this.panPointerId !== null
     ) {
@@ -636,7 +670,7 @@ export default class FarmScene extends Phaser.Scene {
   private updateCanvasCursor(dragging = false) {
     if (!this.game?.canvas) return
 
-    if (this.cameraMode !== 'overview') {
+    if (this.cameraMode !== 'overview' && !this.animalWorld?.visible) {
       this.game.canvas.style.cursor = 'default'
       return
     }
@@ -1345,6 +1379,8 @@ export default class FarmScene extends Phaser.Scene {
   }
 
   private onSceneDestroy = () => {
+    this.animalWorld?.destroy()
+    this.animalWorld = null
     this.removeLandOfferSign()
     this.cleanupHarvestVisualTransitions()
     this.clearCropVisualTransitionTimer()
@@ -1367,7 +1403,7 @@ export default class FarmScene extends Phaser.Scene {
 
   private onFarmSync = (e: Event) => {
     const farm = (e as CustomEvent<Farm>).detail
-
+    if (farm.id !== this.farm.id) return
     this.farm = farm
 
     const topologyChanged =
@@ -1391,10 +1427,17 @@ export default class FarmScene extends Phaser.Scene {
       // Compras futuras podem adicionar plots ou ampliar a matriz. Reiniciar
       // reconstrói tiles, hit areas, bounds e enquadramento de forma atômica.
       this.clearCropVisualTransitionTimer()
-      this.scene.restart({ farm, isVisiting: this.isVisiting })
+      this.scene.restart({ farm, isVisiting: this.isVisiting, modalSources: [...this.modalBlockers] })
       return
     }
 
+    const enclosureWasVisible = this.animalWorld?.visible
+    this.animalWorld?.sync(farm.animalState)
+    this.updateCameraContentBounds()
+    if (enclosureWasVisible !== this.animalWorld?.visible) {
+      this.layoutCamera(this.scale.gameSize.width, this.scale.gameSize.height)
+      this.updateCanvasCursor()
+    }
     this.syncLandOfferSign()
 
     // Atualiza cada plot

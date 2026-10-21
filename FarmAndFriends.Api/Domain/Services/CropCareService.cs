@@ -292,6 +292,13 @@ public sealed class CropCareService
         if (friendship?.Status != FriendshipStatus.Accepted)
             return CropCareAttempt.Failed(CropCareFailure.NotFriends);
 
+        // Care may insert a reward cycle whose farm FK takes a KEY SHARE lock.
+        // Take Farm before Plot so a simultaneous enclosure/land purchase cannot
+        // hold Farm while waiting for our Plot and form a lock cycle at insertion.
+        var farm = await _context.LockFarmAsync(farmId, cancellationToken);
+        if (farm == null || farm.UserId != ownerUserId)
+            return CropCareAttempt.Failed(CropCareFailure.PlotNotFound);
+
         var plot = await _context.Plots
             .FromSqlInterpolated(
                 $"""

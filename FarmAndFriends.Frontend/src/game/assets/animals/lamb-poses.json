@@ -1,0 +1,109 @@
+{
+  "frames": {
+    "lamb-idle": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.7955801104972375
+      }
+    },
+    "lamb-walk-a": {
+      "frame": {
+        "x": 543,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.7914364640883977
+      }
+    },
+    "lamb-walk-b": {
+      "frame": {
+        "x": 1086,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.7997237569060773
+      }
+    },
+    "lamb-graze": {
+      "frame": {
+        "x": 1629,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 543,
+        "h": 724
+      },
+      "sourceSize": {
+        "w": 543,
+        "h": 724
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.7900552486187845
+      }
+    }
+  },
+  "meta": {
+    "image": "lamb-poses.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 2172,
+      "h": 724
+    },
+    "scale": "1"
+  }
+}

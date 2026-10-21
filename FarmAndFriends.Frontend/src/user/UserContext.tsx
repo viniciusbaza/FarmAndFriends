@@ -27,7 +27,7 @@ export type UserContextType = {
   user: User | null
   loading: boolean
   refreshUser: () => Promise<void>
-  addXp: (xpGained: number) => void
+  economyPending: boolean
   saveProfile: (profile: SaveProfileInput) => Promise<SavedProfile>
 }
 

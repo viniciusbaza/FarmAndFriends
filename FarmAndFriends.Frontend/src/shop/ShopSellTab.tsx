@@ -109,7 +109,7 @@ export function ShopSellTab({
 
   if (loading || loadingSeeds) {
     return (
-      <div className="flex h-56 items-center justify-center text-sm text-emerald-700">
+      <div className="col-span-full flex h-56 items-center justify-center text-sm text-emerald-700">
         Carregando sua colheita...
       </div>
     )
@@ -117,7 +117,7 @@ export function ShopSellTab({
 
   if (seedsError) {
     return (
-      <div className="py-12 text-center text-red-700">
+      <div className="col-span-full py-12 text-center text-red-700">
         <p className="text-4xl">🧺</p>
         <p className="mt-3 font-semibold">Não foi possível carregar os preços.</p>
         <p className="mt-1 text-sm">{seedsError}</p>
@@ -134,7 +134,7 @@ export function ShopSellTab({
 
   if (!inventory) {
     return (
-      <div className="py-12 text-center text-red-700">
+      <div className="col-span-full py-12 text-center text-red-700">
         <p className="text-4xl">🧺</p>
         <p className="mt-3 font-semibold">Não foi possível carregar o inventário.</p>
         <p className="mt-1 text-sm">Feche a loja e tente novamente.</p>
@@ -143,8 +143,11 @@ export function ShopSellTab({
   }
 
   if (crops.length === 0) {
+    if (inventory.items.some(item => item.itemType === 'AnimalProduct' && item.itemId !== 'fertilizer' && item.quantity > 0)) {
+      return null
+    }
     return (
-      <div className="py-12 text-center text-emerald-700">
+      <div className="col-span-full py-12 text-center text-emerald-700">
         <p className="text-4xl">🌱</p>
         <p className="mt-3 font-semibold">Você ainda não tem colheitas para vender.</p>
         <p className="mt-1 text-sm">Plante, aguarde o crescimento e faça a colheita.</p>
@@ -153,7 +156,7 @@ export function ShopSellTab({
   }
 
   return (
-    <div className="grid gap-2 md:grid-cols-2">
+    <>
       {crops.map(crop => {
         const seed = getSeedByCrop(crop.itemId)
         const inputValue = quantityOverrides[crop.itemId]
@@ -253,6 +256,6 @@ export function ShopSellTab({
           </article>
         )
       })}
-    </div>
+    </>
   )
 }

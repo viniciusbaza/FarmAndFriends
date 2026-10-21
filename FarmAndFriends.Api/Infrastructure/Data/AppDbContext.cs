@@ -20,6 +20,11 @@ public class AppDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<AnimalEnclosure> AnimalEnclosures => Set<AnimalEnclosure>();
+    public DbSet<FarmAnimal> FarmAnimals => Set<FarmAnimal>();
+    public DbSet<AnimalProductionCycle> AnimalProductionCycles => Set<AnimalProductionCycle>();
+    public DbSet<AnimalActionCompletion> AnimalActionCompletions => Set<AnimalActionCompletion>();
+    public DbSet<FertilizerApplication> FertilizerApplications => Set<FertilizerApplication>();
     public DbSet<CropCareCompletion> CropCareCompletions =>
         Set<CropCareCompletion>();
     public DbSet<VisitorFarmCareCycle> VisitorFarmCareCycles =>
@@ -59,6 +64,17 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        AnimalModelConfiguration.Configure(modelBuilder);
+
+        modelBuilder.Entity<FertilizerApplication>(entity =>
+        {
+            entity.HasIndex(x => new { x.ActorUserId, x.IdempotencyKey }).IsUnique();
+            entity.HasIndex(x => new { x.PlotId, x.HarvestCycle, x.CycleStartedAt }).IsUnique();
+            entity.HasOne<User>().WithMany().HasForeignKey(x => x.ActorUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<User>().WithMany().HasForeignKey(x => x.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Farm>().WithMany().HasForeignKey(x => x.FarmId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Plot>().WithMany().HasForeignKey(x => x.PlotId).OnDelete(DeleteBehavior.Restrict);
+        });
 
         modelBuilder.Entity<RefreshToken>()
             .HasOne(r => r.User)
@@ -511,7 +527,7 @@ public class AppDbContext : DbContext
                     "(\"SeedId\" IS NULL AND \"CurrentHarvestCycle\" IS NULL) OR (\"SeedId\" IS NOT NULL AND \"CurrentHarvestCycle\" IS NOT NULL AND \"CurrentHarvestCycle\" >= 1)");
                 table.HasCheckConstraint(
                     "CK_Plots_CurrentHarvestCycleStartedAt_Consistent",
-                    "(\"SeedId\" IS NULL AND \"PlantedAt\" IS NULL AND \"ReadyAt\" IS NULL AND \"RemainingYield\" IS NULL AND \"CurrentHarvestCycleStartedAt\" IS NULL) OR (\"SeedId\" IS NOT NULL AND \"PlantedAt\" IS NOT NULL AND \"ReadyAt\" IS NOT NULL AND \"RemainingYield\" IS NOT NULL AND \"CurrentHarvestCycleStartedAt\" IS NOT NULL AND \"ReadyAt\" > \"CurrentHarvestCycleStartedAt\")");
+                    "(\"SeedId\" IS NULL AND \"PlantedAt\" IS NULL AND \"ReadyAt\" IS NULL AND \"RemainingYield\" IS NULL AND \"CurrentHarvestCycleStartedAt\" IS NULL) OR (\"SeedId\" IS NOT NULL AND \"PlantedAt\" IS NOT NULL AND \"ReadyAt\" IS NOT NULL AND \"RemainingYield\" IS NOT NULL AND \"CurrentHarvestCycleStartedAt\" IS NOT NULL AND \"ReadyAt\" >= \"CurrentHarvestCycleStartedAt\")");
                 table.HasCheckConstraint(
                     "CK_Plots_RemainingYield_Positive",
                     "\"RemainingYield\" IS NULL OR \"RemainingYield\" >= 1");

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { authFetch } from '../api/http'
+import { ApiError, authFetch } from '../api/http'
 import { hasFarmExpansion, getLandPurchaseSuccessMessage } from '../land/landPurchase'
 import type { LandPurchaseAttemptStore } from '../land/useLandPurchase'
 import { useFarm } from '../farm/useFarmContext'
@@ -13,6 +13,9 @@ import {
 } from '../farm/farmState'
 import type { PestRemovalAttempt } from '../farm/farmState'
 import { useInventory } from '../inventory/useInventory'
+import { useFertilizerAttempt } from '../fertilizer/useFertilizerAttempt'
+import { fertilizerStock } from '../fertilizer/fertilizerState'
+import { refreshFertilizerState } from '../fertilizer/fertilizerFeedback'
 import { useSeeds } from '../seeds/useSeeds'
 import { useShopItems } from '../shop/useShopItems'
 import type {
@@ -52,6 +55,7 @@ type PendingAction =
   | 'care'
   | 'remove-pest'
   | 'protect'
+  | 'fertilize'
 
 type Feedback = {
   type: 'success' | 'error'
@@ -135,23 +139,28 @@ export function PlotModal({
     canInteract,
   } = useFarm()
   const { getSeed } = useSeeds()
-  const { inventory, refreshInventory } = useInventory()
+  const { inventory, economyPending, refreshInventory } = useInventory()
+  const refreshLandInventory = useCallback(async () => { await refreshInventory() }, [refreshInventory])
   const { getItem } = useShopItems()
-  const { user, addXp, refreshUser } = useUser()
+  const { user, refreshUser } = useUser()
+  const fertilizerAttempt = useFertilizerAttempt(user?.id)
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const pestRemovalAttemptRef = useRef<PestRemovalAttempt | null>(null)
   const actionBusyRef = useRef(false)
+  const fertilizerBusyRef = useRef(false)
 
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [confirmProtection, setConfirmProtection] = useState(false)
+  const [confirmFertilizer, setConfirmFertilizer] = useState(false)
+  const [fertilizedCycle, setFertilizedCycle] = useState<string | null>(null)
+  const [fertilizerSyncPending, setFertilizerSyncPending] = useState(false)
   const [landPurchasePending, setLandPurchasePending] = useState(false)
   const [currentTime, setCurrentTime] = useState(Date.now)
   const handleLandPurchasePending = useCallback((pending: boolean) => {
     setLandPurchasePending(pending)
-    onBusyChange?.(pending)
-  }, [onBusyChange])
+  }, [])
 
   const plot = farm?.plots.find(candidate => candidate.id === plotId)
   const farmId = farm?.id
@@ -171,6 +180,13 @@ export function PlotModal({
   const repellentQuantity = inventory?.items.find(
     item => item.itemType === 'Item' && item.itemId === NATURAL_REPELLENT_ID,
   )?.quantity ?? 0
+  const fertilizerQuantity = fertilizerStock(inventory?.items)
+  const canOfferFertilizer = Boolean(plot?.unlocked && plot.seedId && !plot.isReady
+    && plot.currentHarvestCycle !== null && plot.currentHarvestCycleStartedAt
+    && fertilizerQuantity > 0
+    && !economyPending && !fertilizerSyncPending
+    && !plot.fertilizedAt
+    && fertilizedCycle !== `${farmId}:${plotId}:${plot.currentHarvestCycle}:${plot.currentHarvestCycleStartedAt}`)
 
   const readyAt = plot?.readyAt
   const protectedUntil = plot?.protectedUntil
@@ -214,6 +230,11 @@ export function PlotModal({
   )
   const actionBusy = pendingAction !== null || landPurchasePending
   actionBusyRef.current = actionBusy
+
+  useEffect(() => {
+    onBusyChange?.(actionBusy)
+    return () => onBusyChange?.(false)
+  }, [actionBusy, onBusyChange])
 
   useEffect(() => {
     if (
@@ -291,7 +312,6 @@ export function PlotModal({
           detail: { plotId, xpGained: data.xpGained },
         }),
       )
-      addXp(data.xpGained)
       await Promise.all([refreshFarm(), refreshInventory()])
       onClose()
     } catch (error) {
@@ -329,7 +349,6 @@ export function PlotModal({
       )
       patchPlot(plotId, confirmedHarvestPatch(data))
       window.dispatchEvent(new Event('inventory:changed'))
-      addXp(data.xpGained)
       await Promise.all([refreshFarm(), refreshInventory()])
       onClose()
     } catch (error) {
@@ -377,7 +396,6 @@ export function PlotModal({
         plotId,
         currentPlot => confirmedTheftPatch(currentPlot, data),
       )
-      addXp(data.xpGained)
       await refreshFarm()
       onClose()
     } catch (error) {
@@ -429,7 +447,6 @@ export function PlotModal({
         }),
       )
       window.dispatchEvent(new Event('inventory:changed'))
-      addXp(data.xpGained)
       await refreshFarm()
       onClose()
     } catch (error) {
@@ -487,9 +504,6 @@ export function PlotModal({
         plotId,
         currentPlot => confirmedPestRemovalPatch(currentPlot, data),
       )
-      if (!data.replayed) {
-        addXp(data.xpGained)
-      }
 
       window.dispatchEvent(new Event('inventory:changed'))
       await Promise.allSettled([
@@ -569,6 +583,83 @@ export function PlotModal({
       })
       await Promise.all([refreshFarm(), refreshInventory()])
     } finally {
+      setPendingAction(null)
+    }
+  }
+
+  async function handleFertilize(recover = false) {
+    if (pendingAction || fertilizerBusyRef.current || !farmId || (!recover && !canOfferFertilizer)) return
+    const cycle = plot?.currentHarvestCycle
+    const cycleStartedAt = plot?.currentHarvestCycleStartedAt
+    if (!recover && (cycle === null || cycle === undefined || !cycleStartedAt)) return
+    setFeedback(null)
+    fertilizerBusyRef.current = true
+    setPendingAction('fertilize')
+    try {
+      const response = recover
+        ? await fertilizerAttempt.recover()
+        : await fertilizerAttempt.execute({ action: 'fertilize', farmId, plotId,
+          expectedHarvestCycle: cycle!, expectedCycleStartedAt: cycleStartedAt! })
+      if (!response) return
+      const recoveredPlot = fertilizerAttempt.pending?.action === 'fertilize'
+        && fertilizerAttempt.pending.farmId === farmId
+        && fertilizerAttempt.pending.plotId === plotId
+      if ('readyAt' in response && (!recover || recoveredPlot)) {
+        // A fresh farm projection confirms the current cycle before Phaser receives a new deadline.
+        const completedCycle = recover && fertilizerAttempt.pending?.action === 'fertilize'
+          ? fertilizerAttempt.pending.expectedHarvestCycle : cycle
+        const completedStart = recover && fertilizerAttempt.pending?.action === 'fertilize'
+          ? fertilizerAttempt.pending.expectedCycleStartedAt : cycleStartedAt
+        if (completedCycle !== null && completedCycle !== undefined && completedStart) {
+          setFertilizedCycle(`${farmId}:${plotId}:${completedCycle}:${completedStart}`)
+        }
+      }
+      window.dispatchEvent(new Event('inventory:changed'))
+      const refreshed = await refreshFertilizerState(refreshFarm, refreshInventory)
+      const synchronized = refreshed.farmUpdated && refreshed.inventoryUpdated
+      setFertilizerSyncPending(!synchronized)
+      setConfirmFertilizer(false)
+      setCurrentTime(Date.now())
+      const secondsGained = 'readyAt' in response
+        ? Math.max(0, Math.round((Date.parse(response.previousReadyAt) - Date.parse(response.readyAt)) / 1000))
+        : 0
+      const timeGained = secondsGained >= 60
+        ? `${Math.floor(secondsGained / 60)} min${secondsGained % 60 ? ` ${secondsGained % 60} s` : ''}`
+        : `${secondsGained} s`
+      setFeedback({ type: 'success', message: !synchronized
+        ? '🌿 Ação de adubo confirmada. Ainda não foi possível atualizar a plantação e o estoque. Atualize para conferir o resultado; o adubo não será usado novamente.'
+        : !('readyAt' in response)
+        ? '🌿 Compra de adubo recuperada. Estoque atualizado.'
+        : response.replayed ? '🌿 Adubação já confirmada. Estoque e plantação atualizados.'
+          : isVisiting ? `🌿 Você adubou a plantação do seu amigo e adiantou a colheita em ${timeGained}.`
+            : `🌿 Plantação adubada! A colheita foi adiantada em ${timeGained}.` })
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'ALREADY_FERTILIZED'
+        && cycle !== null && cycle !== undefined && cycleStartedAt) {
+        setFertilizedCycle(`${farmId}:${plotId}:${cycle}:${cycleStartedAt}`)
+      }
+      setFeedback({ type: 'error', message: errorMessage(error, 'Não foi possível adubar agora. Atualize e confira seu estoque.') })
+      window.dispatchEvent(new Event('inventory:changed'))
+      await Promise.allSettled([refreshFarm(), refreshInventory()])
+    } finally {
+      fertilizerBusyRef.current = false
+      setPendingAction(null)
+    }
+  }
+
+  async function retryFertilizerSync() {
+    if (pendingAction || fertilizerBusyRef.current) return
+    fertilizerBusyRef.current = true
+    setPendingAction('fertilize')
+    try {
+      const refreshed = await refreshFertilizerState(refreshFarm, refreshInventory)
+      const synchronized = refreshed.farmUpdated && refreshed.inventoryUpdated
+      setFertilizerSyncPending(!synchronized)
+      setFeedback({ type: synchronized ? 'success' : 'error', message: synchronized
+        ? '🌿 Plantação e estoque atualizados. Confira as ações disponíveis no lote.'
+        : 'Ainda não foi possível atualizar a plantação e o estoque. Tente novamente.' })
+    } finally {
+      fertilizerBusyRef.current = false
       setPendingAction(null)
     }
   }
@@ -686,7 +777,7 @@ export function PlotModal({
           playerLevel={user?.level ?? null}
           attemptStore={landPurchaseAttemptStore}
           refreshFarm={reconcileLandPurchase}
-          refreshInventory={refreshInventory}
+          refreshInventory={refreshLandInventory}
           onReconciliationStarted={handleLandPurchaseReconciliationStarted}
           onReconciliationFailed={handleLandPurchaseReconciliationFailed}
           onConfirmed={handleLandPurchaseConfirmed}
@@ -896,6 +987,38 @@ export function PlotModal({
           )}
         </section>
       )}
+
+      {plot.unlocked && plot.seedId && !plot.isReady && fertilizerQuantity > 0 && <section className="mt-3 border-t border-lime-200 pt-3">
+        <p className="text-xs text-emerald-700">🌿 Seu adubo: {fertilizerQuantity}</p>
+        {(plot.fertilizedAt || fertilizedCycle === `${farmId}:${plotId}:${plot.currentHarvestCycle}:${plot.currentHarvestCycleStartedAt}`) && <p className="mt-1 text-xs text-amber-800">Este ciclo já foi adubado.</p>}
+        {!confirmFertilizer ? <button type="button" disabled={!canOfferFertilizer || actionBusy || !!fertilizerAttempt.pending}
+          onClick={() => setConfirmFertilizer(true)}
+          className="mt-2 min-h-10 w-full rounded-lg border border-lime-400 bg-lime-50 px-3 py-2 text-sm font-semibold text-emerald-900 disabled:opacity-50">
+          🌿 Adubar plantação
+        </button> : <div className="mt-2 rounded-lg border border-lime-300 bg-lime-50 p-2">
+          <p className="text-sm text-emerald-900">Usar 1 adubo {isVisiting ? 'na plantação do seu amigo' : 'neste lote'}?</p>
+          <div className="mt-2 flex gap-2">
+            <button type="button" disabled={actionBusy} onClick={() => void handleFertilize()}
+              className="min-h-10 flex-1 rounded-lg bg-emerald-700 px-2 text-sm font-semibold text-white disabled:opacity-50">
+              {pendingAction === 'fertilize' ? 'Adubando…' : 'Confirmar'}
+            </button>
+            <button type="button" disabled={actionBusy} onClick={() => setConfirmFertilizer(false)}
+              className="min-h-10 rounded-lg border border-lime-300 bg-white px-2 text-sm text-emerald-900">Cancelar</button>
+          </div>
+        </div>}
+      </section>}
+
+      {fertilizerAttempt.pending && <div role="status" className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
+        A última ação de adubo ainda precisa ser confirmada.
+        <button type="button" disabled={actionBusy || fertilizerAttempt.busy} onClick={() => void handleFertilize(true)}
+          className="mt-2 min-h-10 w-full rounded-lg bg-amber-700 px-2 font-semibold text-white disabled:opacity-50">Recuperar resultado</button>
+      </div>}
+
+      {fertilizerSyncPending && <button type="button" disabled={actionBusy}
+        onClick={() => void retryFertilizerSync()}
+        className="mt-2 min-h-10 w-full rounded-lg border border-amber-300 bg-amber-50 px-2 text-sm font-semibold text-amber-900 disabled:opacity-50">
+        {pendingAction === 'fertilize' ? 'Atualizando…' : 'Atualizar plantação e estoque'}
+      </button>}
 
       {feedback && (
         <div

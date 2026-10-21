@@ -1,0 +1,17 @@
+{
+  "frames": {
+    "enclosure-wood-transparent": {
+      "frame": { "x": 0, "y": 0, "w": 1774, "h": 887 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1774, "h": 887 },
+      "sourceSize": { "w": 1774, "h": 887 }
+    }
+  },
+  "meta": {
+    "image": "enclosure-wood-transparent.png",
+    "format": "RGBA8888",
+    "size": { "w": 1774, "h": 887 },
+    "scale": "1"
+  }
+}

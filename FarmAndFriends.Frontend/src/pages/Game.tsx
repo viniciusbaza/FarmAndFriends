@@ -9,9 +9,15 @@ import type { LandPurchaseAttempt } from '../land/landPurchase'
 import { clamp } from '../utils/math'
 import { useEffect, useRef, useState } from 'react'
 import type { FarmCameraMode } from '../game/farmCamera'
+import { useAnimals } from '../animals/useAnimals'
+import { AnimalPanel } from '../animals/AnimalPanel'
+import { resolveAnimalModalPlacement } from '../animals/animalModalPosition'
+import { useInventory } from '../inventory/useInventory'
 
 export default function Game() {
-  const { user, loading } = useUser()
+  const { user, loading, economyPending: userPending } = useUser()
+  const { economyPending: walletPending } = useInventory()
+  const { selected: selectedAnimal, close: closeAnimals } = useAnimals()
   const {
     farm,
     loading: farmLoading,
@@ -21,6 +27,15 @@ export default function Game() {
   } = useFarm()
   const { selectedPlot, closePlot } = usePlotInteraction()
   const [plotModalBusy, setPlotModalBusy] = useState(false)
+  const [viewport, setViewport] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }))
+  useEffect(() => {
+    const resize = () => setViewport({ width: window.innerWidth, height: window.innerHeight })
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [])
   const landPurchaseAttemptStore = useRef<LandPurchaseAttempt | null>(null)
   const [landPurchaseFeedback, setLandPurchaseFeedback] = useState<
     LandPurchaseFeedback | null
@@ -104,6 +119,29 @@ export default function Game() {
         onCameraModeChange={changeCameraMode}
       />
 
+      {(userPending || walletPending) && <p role="status" className="pointer-events-none fixed bottom-4 left-1/2 z-30 w-[min(25rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl bg-amber-50 px-3 py-2 text-center text-xs font-semibold text-amber-950 shadow-lg">Sincronizando saldo, inventário e XP…</p>}
+      {selectedAnimal && (() => {
+        const placement = resolveAnimalModalPlacement(
+          selectedAnimal.anchor,
+          viewport.width,
+          viewport.height,
+        )
+
+        return <div className="fixed inset-0 z-40"
+          onPointerDown={event => event.stopPropagation()}
+          onClick={closeAnimals}>
+          <div className="animal-modal-anchor plot-modal-anchor fixed z-50"
+            data-side={placement.side}
+            style={{ left: placement.x, top: placement.y }}
+            onClick={event => event.stopPropagation()}>
+            <AnimalPanel
+              key={`${selectedAnimal.farmId}:${selectedAnimal.animalId}`}
+              maxHeight={placement.maxHeight}
+            />
+          </div>
+        </div>
+      })()}
+
       {visitRecoveryFeedback && (
         <div
           role="alert"
@@ -141,7 +179,7 @@ export default function Game() {
       )}
 
       {/* Modal do Plot */}
-      {selectedPlot && (() => {
+      {selectedPlot && !selectedAnimal && (() => {
         const MARGIN = 16
         const horizontalSafeMargin = Math.min(
           window.innerWidth / 2,

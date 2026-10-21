@@ -39,13 +39,16 @@ function notification(
   }
 }
 
-test('offers a visit only for the five approved event types and a current friend', () => {
+test('offers a visit for approved farm events including animal help/theft and a current friend', () => {
   const visitableTypes = [
     NotificationType.CropCaredFor,
+    NotificationType.PlotFertilized,
     NotificationType.PestRemoved,
     NotificationType.PestProtectionApplied,
     NotificationType.TheftOccurred,
     NotificationType.FriendRequestAccepted,
+    NotificationType.AnimalHelped,
+    NotificationType.AnimalProductStolen,
   ]
 
   for (const type of visitableTypes) {
@@ -57,6 +60,7 @@ test('offers a visit only for the five approved event types and a current friend
       ),
       { kind: 'visit', friend },
     )
+    assert.equal(getNotificationAction(notification(String(type), type), [], new Set()), null)
   }
 })
 

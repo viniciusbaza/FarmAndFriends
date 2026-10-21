@@ -12,6 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
+builder.Services.AddScoped<FarmAndFriends.Api.Controllers.AnimalExceptionFilter>();
+  builder.Services.AddScoped<AnimalEnclosureService>();
+  builder.Services.AddScoped<FertilizerService>();
+  builder.Services.AddOptions<FertilizerOptions>()
+      .Bind(builder.Configuration.GetSection(FertilizerOptions.SectionName))
+      .Validate(options => options.IsValid(), "Invalid fertilizer configuration.")
+      .ValidateOnStart();
+builder.Services.AddOptions<AnimalEnclosureOptions>()
+    .Bind(builder.Configuration.GetSection(AnimalEnclosureOptions.SectionName))
+    .Validate(options => options.IsValid(), "Animal economy configuration must preserve positive rewards, production limits and owner reserves.")
+    .ValidateOnStart();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

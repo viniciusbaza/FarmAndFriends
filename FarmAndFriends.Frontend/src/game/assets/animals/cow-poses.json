@@ -1,0 +1,205 @@
+{
+  "frames": {
+    "adult-idle": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.92578125
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      }
+    },
+    "adult-walk-a": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.931640625
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 384
+      }
+    },
+    "adult-walk-b": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.916015625
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 768
+      }
+    },
+    "adult-graze": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.9296875
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 1152
+      }
+    },
+    "calf-idle": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.744140625
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 512,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      }
+    },
+    "calf-walk-a": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.744140625
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 512,
+        "h": 512,
+        "w": 384,
+        "x": 384
+      }
+    },
+    "calf-walk-b": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.75
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 512,
+        "h": 512,
+        "w": 384,
+        "x": 768
+      }
+    },
+    "calf-graze": {
+      "pivot": {
+        "x": 0.5,
+        "y": 0.74609375
+      },
+      "rotated": false,
+      "spriteSourceSize": {
+        "y": 0,
+        "h": 512,
+        "w": 384,
+        "x": 0
+      },
+      "sourceSize": {
+        "h": 512,
+        "w": 384
+      },
+      "trimmed": false,
+      "frame": {
+        "y": 512,
+        "h": 512,
+        "w": 384,
+        "x": 1152
+      }
+    }
+  },
+  "meta": {
+    "image": "cow-poses.png",
+    "format": "RGBA8888",
+    "size": {
+      "h": 1024,
+      "w": 1536
+    },
+    "scale": "1"
+  }
+}

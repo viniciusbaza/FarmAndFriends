@@ -1,0 +1,33 @@
+{
+  "frames": {
+    "adult-idle": {
+      "frame": { "x": 0, "y": 0, "w": 768, "h": 512 },
+      "rotated": false, "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 512 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.57, "y": 0.988 }
+    },
+    "adult-walk": {
+      "frame": { "x": 768, "y": 0, "w": 768, "h": 512 },
+      "rotated": false, "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 512 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.44, "y": 0.984 }
+    },
+    "adult-ready": {
+      "frame": { "x": 0, "y": 512, "w": 768, "h": 512 },
+      "rotated": false, "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 512 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.57, "y": 0.895 }
+    },
+    "piglet-idle": {
+      "frame": { "x": 768, "y": 512, "w": 768, "h": 512 },
+      "rotated": false, "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 768, "h": 512 },
+      "sourceSize": { "w": 768, "h": 512 },
+      "pivot": { "x": 0.48, "y": 0.887 }
+    }
+  },
+  "meta": { "image": "pig-poses.png", "format": "RGBA8888", "size": { "w": 1536, "h": 1024 }, "scale": "1" }
+}
