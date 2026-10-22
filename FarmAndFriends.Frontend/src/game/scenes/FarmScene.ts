@@ -3,7 +3,8 @@ import type { FarmSceneReady } from '../../farm/farmSceneSync'
 import { gridToIso } from '../iso/isoUtils'
 import farmFontImage from '../assets/fonts/minogram_6x10.png'
 import farmFontData from '../assets/fonts/minogram_6x10.xml?url'
-import farmEnvironment from '../assets/environment/farm-clearing-enclosure-v2.png'
+import farmEnvironment from '../assets/environment/farm-clearing.png'
+import farmEnclosureEnvironment from '../assets/environment/farm-clearing-enclosure-v3.png'
 import plotImage from '../assets/tiles/plot.png'
 import plotLockedImage from '../assets/tiles/plot-locked.png'
 import plotGlowImage from '../assets/tiles/plot-glow.png'
@@ -163,6 +164,7 @@ export default class FarmScene extends Phaser.Scene {
     preloadAnimalAssets(this)
     this.load.bitmapFont('farm-font', farmFontImage, farmFontData)
     this.load.image('farm-environment', farmEnvironment)
+    this.load.image('farm-environment-enclosure', farmEnclosureEnvironment)
     this.load.image('plot', plotImage)
     this.load.image('plot-locked', plotLockedImage)
     this.load.image('plot-glow', plotGlowImage)
@@ -213,7 +215,7 @@ export default class FarmScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#dff5ff')
     this.createBackdrop()
     this.environment = this.add
-      .image(0, 0, 'farm-environment')
+      .image(0, 0, this.getEnvironmentTexture())
       .setScale(
         ENVIRONMENT_SCALE *
           calculateFarmEnvironmentExpansion(plotLayout.bounds),
@@ -318,6 +320,12 @@ export default class FarmScene extends Phaser.Scene {
     window.dispatchEvent(new CustomEvent<FarmSceneReady>('farm:scene:ready', {
       detail: { farmId: this.farm.id, isVisiting: this.isVisiting },
     }))
+  }
+
+  private getEnvironmentTexture() {
+    return this.farm.animalState?.enclosure
+      ? 'farm-environment-enclosure'
+      : 'farm-environment'
   }
 
   private createBackdrop() {
@@ -1431,6 +1439,10 @@ export default class FarmScene extends Phaser.Scene {
       return
     }
 
+    const environmentTexture = this.getEnvironmentTexture()
+    if (this.environment?.texture.key !== environmentTexture) {
+      this.environment?.setTexture(environmentTexture)
+    }
     const enclosureWasVisible = this.animalWorld?.visible
     this.animalWorld?.sync(farm.animalState)
     this.updateCameraContentBounds()

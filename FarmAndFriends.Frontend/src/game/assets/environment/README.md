@@ -1,6 +1,10 @@
 # Farm environment assets
 
-`farm-clearing-enclosure-v2.png` is the current Phaser background. It was produced with built-in ImageGen as a precise edit of `farm-clearing.png`; both are 1774 × 887 RGBA images with transparent outer corners. The original remains in this directory as non-destructive history.
+Phaser uses `farm-clearing.png` before enclosure acquisition and `farm-clearing-enclosure-v3.png` afterwards. Both are 1774 × 887 RGBA images. Version 3 composites only a local clearing from a built-in ImageGen edit onto the original; every pixel outside the edited polygon remains identical to `farm-clearing.png`. The rear vegetation and foreground border retain the original artwork. Prompt, polygon, pixel comparison and scene screenshots are recorded in [`imgs/animal-enclosure/2026-10-20-local-clearing`](../../../../../imgs/animal-enclosure/2026-10-20-local-clearing/).
+
+## Previous version (v2)
+
+`farm-clearing-enclosure-v2.png` is retained as history. Its broader texture changes motivated v3.
 
 The current edit keeps the yellow-fruit tree at the right boundary and clears the complete placement band between it and the barn. Shrubs, flowers and loose rocks that could appear behind the enclosure rails were moved to outer perimeter areas. This leaves continuous grass for the animal enclosure without cutting the orchard through the enclosure sprite. Barn, pond, paths, plot clearing, outer fence and island silhouette remain invariants.
 

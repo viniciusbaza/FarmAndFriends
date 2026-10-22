@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,csharp
-# Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,csharp
+# Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,csharp,macos,linux
+# Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,csharp,macos,linux
 
 ### Csharp ###
 ## Ignore Visual Studio temporary files, build results, and
@@ -399,6 +399,53 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+### Linux ###
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### macOS Patch ###
+# iCloud generated files
+*.icloud
+
 ### VisualStudioCode ###
 !.vscode/*.code-snippets
 
@@ -433,4 +480,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,csharp
+# End of https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,csharp,macos,linux
